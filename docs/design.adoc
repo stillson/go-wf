@@ -1,3 +1,57 @@
 = GO-WF design document
 
-tada
+== Basic Concept
+
+The `wf` tool handles shortcuts for a developers work flow. Instead of having to remember the options
+to run gdb, for example, a user might run `wf dbg` in one window and `wf gdb` in another. The exact
+options are in a root file of the repository.  In some ways `make` is used the same way, but makefiles
+might be checked into the repo, scripts need options to be remembered, and other tools may be used
+in the developers work flow. By centralizing this information in one file, `wf` allows a developers
+workflow to be simpler and faster.
+
+For example:
+
+[source,bash]
+----
+# edit code
+> wf build
+> wf test
+# edit some more
+> wf test
+> wf check #lint checks
+> git commit
+----
+
+By using the same rubrics across every build environment, less small details must be remembered by the
+developer providing a simpler and faster code/build/test loop.
+
+== History
+
+This started from my habit of creating a script called Runit.sh in every directory I worked in.
+This led to an alias `rn`, that just ran Runit.sh. This led to a python script called `wf.py` which
+was called by a shell script called `wf`.
+
+== MVP Design
+
+* commands in local file called .workflowrc
+** simple format <name>,<command>
+** if file doesn't exist then raise error, fatal
+** if there is a parsing error, raise error, fatal
+* `wf` will read and parse file
+* `wf` will look at it's first arg
+** extra args are ignored for now
+* find command matching name
+** if first arg doesn't match a name, fatal error
+* the command is executed
+* `wf` return the return value of the executed program
+
+== Later ideas
+* Replace .workflowrc file format with yaml
+* Provide a spot in XDG directory to save a default workflowrc
+** multiple rc's
+** composable parts to build a local rc?
+* use go's templates for commands
+* use helm's templated for commands
+* logging output (emulating tee's behaviour)
+* executing command under a shell
+** specified shell instead of the user's default
