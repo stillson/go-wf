@@ -68,6 +68,8 @@ func (rc *PlainRCFile) Parse(r io.Reader) error {
 			return fmt.Errorf("could not parse line in rcfile %v", line)
 		}
 
+		rubric = strings.Trim(rubric, " \n\t")
+		cmd = strings.Trim(cmd, " \n\t")
 		rc.Commands[rubric] = cmd
 	}
 
