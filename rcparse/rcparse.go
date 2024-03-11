@@ -3,24 +3,78 @@
 // i.e. simple, yaml, klingon, etc.
 package rcparse
 
-import "io"
+import (
+	"bufio"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"strings"
+)
 
 // PlainRCFile is based around a reader
 // instead of a filename; this is much more testable.
 type PlainRCFile struct {
-	Contents io.Reader
 	Commands map[string]string
 }
 
 type RCFile interface {
-	Parse() error
+	Parse(r io.Reader) error
 	GetCommand(rubric string) string
 }
 
-func (rc *PlainRCFile) Parse() error {
+func NewPlainRCFile() PlainRCFile {
+	c := make(map[string]string)
+	return PlainRCFile{c}
+}
+
+// Only works with full path
+
+func NewPlainRcFile(filename string) (*PlainRCFile, error) {
+	filename = filepath.Join("/", filepath.Clean(filename))
+
+	var fp, err = os.Open(filename)
+
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		_ = fp.Close()
+	}()
+
+	rv := PlainRCFile{
+		Commands: make(map[string]string),
+	}
+
+	err = rv.Parse(fp)
+
+	return &rv, err
+}
+
+func (rc *PlainRCFile) Parse(r io.Reader) error {
+
+	s := bufio.NewScanner(r)
+
+	for s.Scan() {
+		line := s.Text()
+
+		// Put in # comments
+		if line[0] == '#' {
+			continue
+		}
+
+		rubric, cmd, found := strings.Cut(line, ",")
+		if !found {
+			return fmt.Errorf("could not parse line in rcfile %v", line)
+		}
+
+		rc.Commands[rubric] = cmd
+	}
+
 	return nil
 }
 
-func (rc *PlainRCFile) GetCommand(rubric string) string {
-	return rc.Commands[rubric]
+func (rc *PlainRCFile) GetCommand(rubric string) (string, bool) {
+	val, exists := rc.Commands[rubric]
+	return val, exists
 }

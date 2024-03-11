@@ -4,10 +4,10 @@ build:
 	go build
 
 test:
-	go test
+	go test ./...
 
 cover:
-	go test -coverprofile coverage.out
+	go test -coverprofile coverage.out ./...
 
 report: cover
 	go tool cover -html=coverage.out -o cover.html
