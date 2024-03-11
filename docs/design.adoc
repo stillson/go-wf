@@ -34,16 +34,16 @@ was called by a shell script called `wf`.
 == MVP Design
 
 * commands in local file called .workflowrc
-** simple format <name>,<command>
+** simple format <rubric>,<command>
 ** if file doesn't exist then raise error, fatal
 ** if there is a parsing error, raise error, fatal
 * `wf` will read and parse file
 * `wf` will look at it's first arg
 ** extra args are ignored for now
-* find command matching name
-** if first arg doesn't match a name, fatal error
+* find command matching rubric
+** if first arg doesn't match a rubric, fatal error
 * the command is executed
-* `wf` return the return value of the executed program
+* `wf` returns the return value of the executed program
 
 == Later ideas
 * Replace .workflowrc file format with yaml
