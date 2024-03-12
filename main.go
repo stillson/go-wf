@@ -10,25 +10,29 @@ import (
 	"strings"
 )
 
+// This is tricky to test. Depends on hidden variable and file system.
 func preProcCmd(cmd string) (string, []string, error) {
-
 	splitCmd := strings.Split(cmd, " ")
 
 	outCmd, err := exec.LookPath(splitCmd[0])
-
 	if err != nil {
 		return splitCmd[0], splitCmd[1:], err
 	}
-	return outCmd, splitCmd[1:], nil
 
+	return outCmd, splitCmd[1:], nil
 }
 
 func main() {
 
+	// parse command line
 	flag.Parse()
 	rubric := flag.Arg(0)
-	red := color.New(color.FgHiRed)
 
+	// set up colors
+	red := color.New(color.FgHiRed)
+	green := color.New(color.FgHiGreen)
+
+	// get filename of rcfile
 	f, err := rcfile.GetRCFile()
 	if err != nil {
 		_, _ = red.Printf("Error getting rcfile:%v\n", err)
@@ -36,7 +40,6 @@ func main() {
 	}
 
 	ourRcFile, err := rcparse.NewPlainRcFile(f)
-
 	if err != nil {
 		_, _ = red.Printf("Error parsing rcfile:%v\n", err)
 		os.Exit(2)
@@ -45,7 +48,6 @@ func main() {
 	// fmt.Printf("\tRC: %v\n", ourRcFile)
 
 	cmd, exists := ourRcFile.GetCommand(rubric)
-
 	if !exists {
 		_, _ = red.Printf("rubric does not exist\n")
 		os.Exit(3)
@@ -56,15 +58,14 @@ func main() {
 		_, _ = red.Printf("cmd not found in path? %v\terr:%v\n", splitCmd, err)
 		os.Exit(4)
 	}
-	green := color.New(color.FgHiGreen)
+
 	_, _ = green.Printf("cmd: %v\t\targs: %v\n\n", splitCmd, splitArgs)
 
 	// Because this executes arbitrary commands from and external file
 	// there is no way to make this "safe", short of whitelisting
 	// hence the nolint:gosec
 	ecmd := exec.Command(splitCmd, splitArgs...) //nolint:gosec
-	ecmd.Stdout = os.Stdout
-	ecmd.Stderr = os.Stderr
+	ecmd.Stdout, ecmd.Stderr = os.Stdout, os.Stderr
 
 	err = ecmd.Run()
 	if err != nil {

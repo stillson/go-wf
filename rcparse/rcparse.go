@@ -23,13 +23,7 @@ type RCFile interface {
 	GetCommand(rubric string) string
 }
 
-func NewPlainRCFile() PlainRCFile {
-	c := make(map[string]string)
-	return PlainRCFile{c}
-}
-
-// Only works with full path
-
+// Only works with full path.
 func NewPlainRcFile(filename string) (*PlainRCFile, error) {
 	filename = filepath.Join("/", filepath.Clean(filename))
 

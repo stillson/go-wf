@@ -3,6 +3,8 @@ package rcparse
 import (
 	"bytes"
 	"io"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -58,6 +60,7 @@ func TestPlainRCFile_Parse(t *testing.T) {
 	type args struct {
 		r io.Reader
 	}
+
 	tests := []struct {
 		name    string
 		fields  fields
@@ -104,6 +107,41 @@ func TestPlainRCFile_Parse(t *testing.T) {
 			}
 			if cmd, exists := rc.GetCommand(tt.rubric); cmd != tt.cmd || !exists {
 				t.Errorf("Parse()-get \"%v\":%v == wanted \"%v\"", cmd, exists, tt.cmd)
+			}
+		})
+	}
+}
+
+func TestNewPlainRcFile(t *testing.T) {
+	type args struct {
+		filename string
+	}
+
+	pwd, _ := os.Getwd()
+
+	f, err := os.OpenFile(".workflowrc", os.O_RDWR|os.O_CREATE, 0600)
+	if err != nil {
+		t.Fatal("Could not open .workflowrc for writing")
+	}
+	_, _ = f.WriteString("# for testing                       \n")
+	_ = f.Close()
+
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "test1",
+			args: args{filepath.Join(pwd, ".workflowrc")},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := NewPlainRcFile(tt.args.filename)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("NewPlainRcFile() error = %v, wantErr %v", err, tt.wantErr)
+				return
 			}
 		})
 	}
