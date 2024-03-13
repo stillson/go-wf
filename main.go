@@ -13,12 +13,18 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"github.com/fatih/color"
 	"github.com/stillson/go-wf/rcfile"
 	"github.com/stillson/go-wf/rcparse"
 	"os"
 	"os/exec"
 	"strings"
+	"time"
+)
+
+const (
+	VERSION = "0.0.1"
 )
 
 // This is tricky to test. Depends on hidden variable and file system.
@@ -34,20 +40,49 @@ func preProcCmd(cmd string) (string, []string, error) {
 }
 
 func main() {
-
-	// parse command line
+	// flags
+	versionQ := flag.Bool("versionQ", false, "Version of this program")
+	verboseQ := flag.Bool("V", false, "Verbose output")
+	timeQ := flag.Bool("t", false, "Time the command")
+	wfFile := flag.String("f", ".workflowrc", "Name of workflow file")
 	flag.Parse()
-	rubric := flag.Arg(0)
+
+	if *versionQ {
+		fmt.Printf("wf version %v\n", VERSION)
+		return
+	}
+
+	verbose := false
+	if *verboseQ {
+		verbose = true
+		fmt.Println("Verbose is on")
+	}
+
+	timing := false
+	if *timeQ {
+		timing = true
+		if verbose {
+			fmt.Printf("Timing enabled\n")
+		}
+	}
+
+	if verbose {
+		fmt.Printf("File to search for: %s\n", *wfFile)
+	}
 
 	// set up colors
 	red := color.New(color.FgHiRed)
 	green := color.New(color.FgHiGreen)
 
 	// get filename of rcfile
-	f, err := rcfile.GetRCFile()
+	f, err := rcfile.GetRCFile(*wfFile)
 	if err != nil {
 		_, _ = red.Printf("Error getting rcfile:%v\n", err)
 		os.Exit(1)
+	}
+
+	if verbose {
+		fmt.Printf("Actual file found: %s\n", f)
 	}
 
 	ourRcFile, err := rcparse.NewPlainRcFile(f)
@@ -56,7 +91,14 @@ func main() {
 		os.Exit(2)
 	}
 
-	// fmt.Printf("\tRC: %v\n", ourRcFile)
+	if verbose {
+		fmt.Printf("\tRC: %v\n", ourRcFile)
+	}
+
+	rubric := flag.Arg(0)
+	if verbose {
+		fmt.Printf("rubric is: %s\n", rubric)
+	}
 
 	cmd, exists := ourRcFile.GetCommand(rubric)
 	if !exists {
@@ -78,11 +120,26 @@ func main() {
 	ecmd := exec.Command(splitCmd, splitArgs...) //nolint:gosec
 	ecmd.Stdout, ecmd.Stderr = os.Stdout, os.Stderr
 
-	err = ecmd.Run()
-	if err != nil {
-		_, _ = red.Printf("%v", err)
+	var now int64
+	if timing {
+		now = time.Now().UnixMicro()
+		if verbose {
+			fmt.Printf("Start time: %v\n", now)
+		}
 	}
 
+	err = ecmd.Run()
+	if err != nil {
+		_, _ = red.Printf("%v\n", err)
+	}
+
+	if timing {
+		end := time.Now().UnixMicro()
+		if verbose {
+			fmt.Printf("End time %v\n", end)
+		}
+		fmt.Printf("Total Time in µsecs: %v\n", end-now)
+	}
 	exitVal := ecmd.ProcessState.ExitCode()
 
 	_, _ = green.Printf("\nProcess exited with %v\n", exitVal)

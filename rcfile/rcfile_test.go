@@ -23,18 +23,20 @@ func TestGetRCFile(t *testing.T) {
 
 	tests := []struct {
 		name    string
+		fName   string
 		want    string
 		wantErr bool
 	}{
 		{
 			name:    "test1",
+			fName:   ".workflowrc",
 			want:    fmt.Sprintf("%s/.workflowrc", pwd),
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetRCFile()
+			got, err := GetRCFile(tt.fName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetRCFile() error = %v, wantErr %v", err, tt.wantErr)
 				return

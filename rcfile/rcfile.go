@@ -22,12 +22,12 @@ import (
 // later, search parents, copy in a default if needed
 // hmmm, how to test
 
-func GetRCFile() (string, error) {
+func GetRCFile(fname string) (string, error) {
 
 	pwd, err := os.Getwd()
 	if err != nil {
 		return "", err
 	}
 
-	return path.Join(pwd, ".workflowrc"), nil
+	return path.Join(pwd, fname), nil
 }
