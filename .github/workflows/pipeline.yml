@@ -3,10 +3,10 @@ name: go-wf pipeline
 on:
   pull_request:
     branches:
-      - master
+      - main
   push:
     branches:
-      - master
+      - main
   workflow_dispatch:
 jobs:
   test:
@@ -51,7 +51,7 @@ jobs:
       - name: Run Format Check
         run: make check-format
   vet:
-    name: Check formatting
+    name: Check formatting0
     runs-on: ubuntu-latest
     steps:
       - name: Set up Go 1.x
