@@ -12,6 +12,7 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"github.com/fatih/color"
@@ -41,9 +42,10 @@ func preProcCmd(cmd string) (string, []string, error) {
 
 func main() {
 	// flags
-	versionQ := flag.Bool("versionQ", false, "Version of this program")
+	versionQ := flag.Bool("v", false, "Version of this program")
 	verboseQ := flag.Bool("V", false, "Verbose output")
 	timeQ := flag.Bool("t", false, "Time the command")
+	dumpQ := flag.Bool("d", false, "Dump contents of workflow file")
 	wfFile := flag.String("f", ".workflowrc", "Name of workflow file")
 	flag.Parse()
 
@@ -66,6 +68,14 @@ func main() {
 		}
 	}
 
+	dump := false
+	if *dumpQ {
+		dump = true
+		if verbose {
+			fmt.Printf("Dumping workflow file\n")
+		}
+	}
+
 	if verbose {
 		fmt.Printf("File to search for: %s\n", *wfFile)
 	}
@@ -83,6 +93,32 @@ func main() {
 
 	if verbose {
 		fmt.Printf("Actual file found: %s\n", f)
+	}
+
+	if dump {
+		var fp, err = os.Open(f) //nolint:gosec
+		if err != nil {
+			_, _ = red.Printf("Error reading rcfile:%v\n", err)
+			os.Exit(2)
+
+		}
+
+		defer func() {
+			_ = fp.Close()
+		}()
+
+		if verbose {
+			fmt.Printf("---\n")
+		}
+		scanner := bufio.NewScanner(fp)
+		for scanner.Scan() {
+			fmt.Println(scanner.Text())
+		}
+		if err := scanner.Err(); err != nil {
+			_, _ = red.Printf("error dumping file %v\n", err)
+		}
+
+		return
 	}
 
 	ourRcFile, err := rcparse.NewPlainRcFile(f)
