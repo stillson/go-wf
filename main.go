@@ -121,7 +121,7 @@ func main() {
 		return
 	}
 
-	ourRcFile, err := rcparse.NewPlainRcFile(f)
+	ourRcFile, err := rcparse.NewYamlFile(f)
 	if err != nil {
 		_, _ = red.Printf("Error parsing rcfile:%v\n", err)
 		os.Exit(2)

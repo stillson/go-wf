@@ -35,6 +35,11 @@ type PlainRCFile struct {
 	Commands map[string]string
 }
 
+// Yaml RCFile.
+type YamlRCFile struct {
+	Commands map[string]string
+}
+
 // NewPlainRcFile Only works with full path.
 func NewPlainRcFile(filename string) (*PlainRCFile, error) {
 	filename = filepath.Join("/", filepath.Clean(filename))
@@ -49,6 +54,27 @@ func NewPlainRcFile(filename string) (*PlainRCFile, error) {
 	}()
 
 	rv := PlainRCFile{
+		Commands: make(map[string]string),
+	}
+
+	err = rv.Parse(fp)
+
+	return &rv, err
+}
+
+// NewYamlRcFile Only works with full path.
+func NewYamlFile(filename string) (*YamlRCFile, error) {
+	filename = filepath.Join("/", filepath.Clean(filename))
+	var fp, err = os.Open(filename)
+
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		_ = fp.Close()
+	}()
+
+	rv := YamlRCFile{
 		Commands: make(map[string]string),
 	}
 
@@ -89,9 +115,6 @@ func (rc *PlainRCFile) GetCommand(rubric string) (string, bool) {
 
 // YamlRCFile
 // An rcfile formatted in yaml.
-type YamlRCFile struct {
-	Commands map[string]string
-}
 
 type YamlFileEntry struct {
 	Rubric string `yaml:"rubric"`
