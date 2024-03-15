@@ -17,7 +17,9 @@ package rcparse
 import (
 	"bufio"
 	"fmt"
+	"github.com/Masterminds/sprig"
 	"gopkg.in/yaml.v3"
+	"html/template"
 	"io"
 	"os"
 	"path/filepath"
@@ -37,6 +39,12 @@ type PlainRCFile struct {
 
 // Yaml RCFile.
 type YamlRCFile struct {
+	Commands map[string]string
+}
+
+// Yaml and Template RCFile.
+type YTRCFile struct {
+	G        map[string]string
 	Commands map[string]string
 }
 
@@ -63,7 +71,7 @@ func NewPlainRcFile(filename string) (*PlainRCFile, error) {
 }
 
 // NewYamlRcFile Only works with full path.
-func NewYamlFile(filename string) (*YamlRCFile, error) {
+func _(filename string) (*YamlRCFile, error) {
 	filename = filepath.Join("/", filepath.Clean(filename))
 	var fp, err = os.Open(filename)
 
@@ -158,4 +166,102 @@ func (rc *YamlRCFile) Parse(r io.Reader) error {
 func (rc *YamlRCFile) GetCommand(rubric string) (string, bool) {
 	val, exists := rc.Commands[rubric]
 	return val, exists
+}
+
+// YamlTmplRCFile
+
+func NewYTFile(filename string) (*YTRCFile, error) {
+	filename = filepath.Join("/", filepath.Clean(filename))
+	var fp, err = os.Open(filename)
+
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		_ = fp.Close()
+	}()
+
+	rv := YTRCFile{
+		Commands: make(map[string]string),
+		G:        make(map[string]string),
+	}
+
+	err = rv.Parse(fp)
+
+	return &rv, err
+}
+
+type YTFileEntry struct {
+	Rubric string `yaml:"rubric"`
+	Cmd    string `yaml:"cmd"`
+}
+
+type YTFormat struct {
+	Items   []YamlFileEntry `yaml:"wf_file"`
+	Globals []string        `yaml:"globals,omitempty"`
+}
+
+func (rc *YTRCFile) Parse(r io.Reader) error {
+	entries := YTFormat{
+		Items:   make([]YamlFileEntry, 10, 11),
+		Globals: make([]string, 10, 11),
+	}
+
+	br := bufio.NewReader(r)
+	fileBuf := make([]byte, 4095, 4096)
+
+	size, err := br.Read(fileBuf)
+	if err != nil {
+		return err
+	}
+	if size == 0 {
+		return fmt.Errorf("empty rc file")
+	}
+
+	fileBuf = fileBuf[0:size]
+
+	err = yaml.Unmarshal(fileBuf, &entries)
+	if err != nil {
+		return err
+	}
+
+	for _, entry := range entries.Items {
+		rc.Commands[entry.Rubric] = entry.Cmd
+	}
+
+	for _, global := range entries.Globals {
+
+		name := strings.SplitN(global, "=", 2)
+		key := strings.Trim(name[0], " \n\t")
+		val := strings.Trim(name[1], " \n\t")
+
+		if len(name) == 2 {
+			rc.G[key] = val
+		}
+	}
+
+	return nil
+}
+
+func (rc *YTRCFile) GetCommand(rubric string) (string, bool) {
+	val, exists := rc.Commands[rubric]
+
+	if !exists {
+		return "", exists
+	}
+
+	t := template.New("cmd").Funcs(sprig.FuncMap())
+	tmlp, err := t.Parse(val)
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "error in template %v", err)
+		return "", false
+	}
+
+	var b strings.Builder
+	err = tmlp.Execute(&b, rc)
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "error executing template: %v", err)
+	}
+
+	return b.String(), exists
 }
