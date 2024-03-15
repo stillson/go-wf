@@ -17,24 +17,25 @@ package rcparse
 import (
 	"bufio"
 	"fmt"
+	"gopkg.in/yaml.v3"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 )
 
-// PlainRCFile is based around a reader
-// instead of a filename; this is much more testable.
-type PlainRCFile struct {
-	Commands map[string]string
-}
-
 type RCFile interface {
 	Parse(r io.Reader) error
 	GetCommand(rubric string) string
 }
 
-// Only works with full path.
+// PlainRCFile
+// (<rubric>,<cmd>\n)* .
+type PlainRCFile struct {
+	Commands map[string]string
+}
+
+// NewPlainRcFile Only works with full path.
 func NewPlainRcFile(filename string) (*PlainRCFile, error) {
 	filename = filepath.Join("/", filepath.Clean(filename))
 
@@ -82,6 +83,56 @@ func (rc *PlainRCFile) Parse(r io.Reader) error {
 }
 
 func (rc *PlainRCFile) GetCommand(rubric string) (string, bool) {
+	val, exists := rc.Commands[rubric]
+	return val, exists
+}
+
+// YamlRCFile
+// An rcfile formatted in yaml.
+type YamlRCFile struct {
+	Commands map[string]string
+}
+
+type YamlFileEntry struct {
+	Rubric string `yaml:"rubric"`
+	Cmd    string `yaml:"cmd"`
+}
+
+type YamlFileFormat struct {
+	Items []YamlFileEntry `yaml:"wf_file"`
+}
+
+func (rc *YamlRCFile) Parse(r io.Reader) error {
+	entries := YamlFileFormat{
+		Items: make([]YamlFileEntry, 10, 11),
+	}
+	br := bufio.NewReader(r)
+	fileBuf := make([]byte, 4095, 4096)
+
+	size, err := br.Read(fileBuf)
+
+	if err != nil {
+		return err
+	}
+	if size == 0 {
+		return fmt.Errorf("empty rc file")
+	}
+
+	fileBuf = fileBuf[0:size]
+
+	err = yaml.Unmarshal(fileBuf, &entries)
+	if err != nil {
+		return err
+	}
+
+	for _, entry := range entries.Items {
+		rc.Commands[entry.Rubric] = entry.Cmd
+	}
+
+	return nil
+}
+
+func (rc *YamlRCFile) GetCommand(rubric string) (string, bool) {
 	val, exists := rc.Commands[rubric]
 	return val, exists
 }
