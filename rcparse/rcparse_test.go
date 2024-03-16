@@ -221,3 +221,75 @@ func TestYamlRCFile_Parse(t *testing.T) {
 		})
 	}
 }
+
+const YamlFile2 = `
+# This is a test comment
+globals:
+  - bob=77
+  - test = thingy
+wf_file:
+  -
+    rubric: a
+    cmd: b {{.G.bob}}
+  -
+    rubric: c
+    cmd: >
+      This is a special
+      test. tada!
+  - rubric: b
+    cmd: '{{.G.test}} {{.G.bob}}'
+`
+
+func TestYTRCFile_Parse(t *testing.T) {
+	type fields struct {
+		Globals  map[string]string
+		Commands map[string]string
+	}
+	type args struct {
+		r io.Reader
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+		rubric  string
+		cmd     string
+	}{
+		{
+			name: "test1",
+			fields: fields{Globals: make(map[string]string),
+				Commands: make(map[string]string)},
+			args:    args{bytes.NewBufferString(YamlFile2)},
+			wantErr: false,
+			rubric:  "a",
+			cmd:     "b 77",
+		},
+		{
+			name: "test2",
+			fields: fields{Globals: make(map[string]string),
+				Commands: make(map[string]string)},
+			args:    args{bytes.NewBufferString(YamlFile2)},
+			wantErr: false,
+			rubric:  "b",
+			cmd:     "thingy 77",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rc := &YTRCFile{
+				G:        tt.fields.Globals,
+				Commands: tt.fields.Commands,
+			}
+			if err := rc.Parse(tt.args.r); (err != nil) != tt.wantErr {
+				t.Errorf("Parse() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantErr {
+				return
+			}
+			if cmd, exists := rc.GetCommand(tt.rubric); cmd != tt.cmd || !exists {
+				t.Errorf("Parse()-get \"%v\":%v == wanted \"%v\"", cmd, exists, tt.cmd)
+			}
+		})
+	}
+}
