@@ -128,14 +128,19 @@ func TestNewPlainRcFile(t *testing.T) {
 		filename string
 	}
 
+	const WF_FILE = ".workflow.yaml"
+
 	pwd, _ := os.Getwd()
 
-	f, err := os.OpenFile(".workflow.yaml", os.O_RDWR|os.O_CREATE, 0600)
+	f, err := os.OpenFile(WF_FILE, os.O_RDWR|os.O_CREATE, 0600)
 	if err != nil {
 		t.Fatal("Could not open .workflow.yaml for writing")
 	}
 	_, _ = f.WriteString("# for testing                       \n")
 	_ = f.Close()
+	defer func() {
+		_ = os.Remove(WF_FILE)
+	}()
 
 	tests := []struct {
 		name    string

@@ -98,7 +98,7 @@ func TestGetRCFile(t *testing.T) {
 			name:    "test2",
 			dir:     subDir,
 			fName:   ".workflow.yaml",
-			want:    filepath.Join("/private", dir, ".workflow.yaml"),
+			want:    filepath.Join(dir, ".workflow.yaml"),
 			wantErr: false,
 		},
 	}
