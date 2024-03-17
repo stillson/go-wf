@@ -1,3 +1,3 @@
 .idea
-.workflowrc
+.workflow.yaml
 go-wf

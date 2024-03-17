@@ -14,20 +14,46 @@
 package rcfile
 
 import (
+	"fmt"
 	"os"
 	"path"
 )
 
-// for now, just get full path to ./.workflowrc
+// for now, just get full path to ./.workflow.yaml
 // later, search parents, copy in a default if needed
 // hmmm, how to test
 
 func GetRCFile(fname string) (string, error) {
 
-	pwd, err := os.Getwd()
+	fpath, err := os.Getwd()
 	if err != nil {
 		return "", err
 	}
 
-	return path.Join(pwd, fname), nil
+	fname = path.Clean(fname)
+
+	for ; fpath != "/"; fpath = path.Dir(fpath) {
+		rcCandidate := path.Join(fpath, fname)
+
+		// does it exist?
+
+		f, err := os.OpenFile(rcCandidate, os.O_RDONLY, 000) //nolint:gosec
+		if err != nil {
+			continue
+		}
+
+		fi, err := f.Stat()
+		if err != nil {
+			continue
+		}
+
+		if fi.IsDir() {
+			continue
+		}
+
+		return rcCandidate, nil
+	}
+
+	return "", fmt.Errorf("workflow file not found")
+
 }

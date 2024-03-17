@@ -130,9 +130,9 @@ func TestNewPlainRcFile(t *testing.T) {
 
 	pwd, _ := os.Getwd()
 
-	f, err := os.OpenFile(".workflowrc", os.O_RDWR|os.O_CREATE, 0600)
+	f, err := os.OpenFile(".workflow.yaml", os.O_RDWR|os.O_CREATE, 0600)
 	if err != nil {
-		t.Fatal("Could not open .workflowrc for writing")
+		t.Fatal("Could not open .workflow.yaml for writing")
 	}
 	_, _ = f.WriteString("# for testing                       \n")
 	_ = f.Close()
@@ -144,7 +144,7 @@ func TestNewPlainRcFile(t *testing.T) {
 	}{
 		{
 			name: "test1",
-			args: args{filepath.Join(pwd, ".workflowrc")},
+			args: args{filepath.Join(pwd, ".workflow.yaml")},
 		},
 	}
 	for _, tt := range tests {

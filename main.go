@@ -46,7 +46,7 @@ func main() {
 	verboseQ := flag.Bool("V", false, "Verbose output")
 	timeQ := flag.Bool("t", false, "Time the command")
 	dumpQ := flag.Bool("d", false, "Dump contents of workflow file")
-	wfFile := flag.String("f", ".workflowrc", "Name of workflow file")
+	wfFile := flag.String("f", ".workflow.yaml", "Name of workflow file")
 	flag.Parse()
 
 	if *versionQ {

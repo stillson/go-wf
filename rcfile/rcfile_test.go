@@ -12,36 +12,112 @@
 package rcfile
 
 import (
-	"fmt"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
+func sameFile(a string, b string) (bool, error) {
+	af, err := os.Open(a) //nolint:gosec
+	if err != nil {
+		return false, err
+	}
+	defer func() {
+		_ = af.Close()
+	}()
+
+	bf, err := os.Open(b) //nolint:gosec
+	if err != nil {
+		return false, err
+	}
+	defer func() {
+		_ = bf.Close()
+	}()
+
+	aInfo, err := af.Stat()
+	if err != nil {
+		return false, err
+	}
+
+	bInfo, err := bf.Stat()
+	if err != nil {
+		return false, err
+	}
+
+	return os.SameFile(aInfo, bInfo), nil
+}
+
 func TestGetRCFile(t *testing.T) {
 
-	pwd, _ := os.Getwd()
+	dir, err := os.MkdirTemp("", "rcfile_test*")
+	if err != nil {
+		t.Fatalf("Unable to creat tmp directory\n")
+	}
+	defer func() {
+		_ = os.RemoveAll(dir)
+	}()
+
+	oldPwd, _ := os.Getwd()
+	defer func() {
+		_ = os.Chdir(oldPwd)
+	}()
+
+	//dir = os.
+
+	err = os.Chdir(dir)
+	if err != nil {
+		t.Fatalf("Unable to change directory to %s: %v\n", dir, err)
+	}
+
+	// make a .workflow.yaml
+	file := filepath.Join(dir, ".workflow.yaml")
+	if err = os.WriteFile(file, []byte("content"), 0600); err != nil {
+		t.Fatalf("Unable to create test .workflow.yaml")
+	}
+	// make subdirectory TEST
+	subDir := filepath.Join(dir, "TEST")
+	if err = os.Mkdir(subDir, 0750); err != nil {
+		t.Fatalf("Unable to creat testing subDir")
+	}
 
 	tests := []struct {
 		name    string
+		dir     string
 		fName   string
 		want    string
 		wantErr bool
 	}{
 		{
 			name:    "test1",
-			fName:   ".workflowrc",
-			want:    fmt.Sprintf("%s/.workflowrc", pwd),
+			dir:     dir,
+			fName:   ".workflow.yaml",
+			want:    filepath.Join(dir, ".workflow.yaml"),
+			wantErr: false,
+		},
+		{
+			name:    "test2",
+			dir:     subDir,
+			fName:   ".workflow.yaml",
+			want:    filepath.Join("/private", dir, ".workflow.yaml"),
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			err = os.Chdir(tt.dir)
+			if err != nil {
+				t.Errorf("unable to change director to %v\n", tt.dir)
+			}
 			got, err := GetRCFile(tt.fName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetRCFile() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if got != tt.want {
+			same, err := sameFile(got, tt.want)
+			if err != nil {
+				t.Errorf("sameFile error %v: %s  %s", err, got, tt.want)
+			}
+			if !same {
 				t.Errorf("GetRCFile() got = %v, want %v", got, tt.want)
 			}
 		})
