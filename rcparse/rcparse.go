@@ -17,13 +17,14 @@ package rcparse
 import (
 	"bufio"
 	"fmt"
-	"github.com/Masterminds/sprig"
-	"gopkg.in/yaml.v3"
 	"html/template"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/Masterminds/sprig"
+	"gopkg.in/yaml.v3"
 )
 
 type RCFile interface {
