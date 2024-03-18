@@ -16,29 +16,16 @@ import (
 	"flag"
 	"fmt"
 	"github.com/fatih/color"
+	"github.com/stillson/go-wf/executor"
 	"github.com/stillson/go-wf/rcfile"
 	"github.com/stillson/go-wf/rcparse"
 	"os"
-	"os/exec"
-	"strings"
 	"time"
 )
 
 const (
 	VERSION = "0.0.1"
 )
-
-// This is tricky to test. Depends on hidden variable and file system.
-func preProcCmd(cmd string) (string, []string, error) {
-	splitCmd := strings.Split(cmd, " ")
-
-	outCmd, err := exec.LookPath(splitCmd[0])
-	if err != nil {
-		return splitCmd[0], splitCmd[1:], err
-	}
-
-	return outCmd, splitCmd[1:], nil
-}
 
 func main() {
 	// flags
@@ -136,35 +123,17 @@ func main() {
 		fmt.Printf("rubric is: %s\n", rubric)
 	}
 
-	cmd, exists := ourRcFile.GetCommand(rubric)
-	if !exists {
-		_, _ = red.Printf("rubric does not exist\n")
-		os.Exit(3)
-	}
-
-	splitCmd, splitArgs, err := preProcCmd(cmd)
-	if err != nil {
-		_, _ = red.Printf("cmd not found in path? %v\terr:%v\n", splitCmd, err)
-		os.Exit(4)
-	}
-
-	_, _ = green.Printf("cmd: %v\t\targs: %v\n\n", splitCmd, splitArgs)
-
-	// Because this executes arbitrary commands from and external file
-	// there is no way to make this "safe", short of whitelisting
-	// hence the nolint:gosec
-	ecmd := exec.Command(splitCmd, splitArgs...) //nolint:gosec
-	ecmd.Stdout, ecmd.Stderr = os.Stdout, os.Stderr
-
 	var now int64
 	if timing {
 		now = time.Now().UnixMicro()
 		if verbose {
-			fmt.Printf("Start time: %v\n", now)
+			_, _ = green.Printf("Start time: %v\n", now)
 		}
 	}
 
-	err = ecmd.Run()
+	localExec := executor.NewLocalExec("main")
+	rv, err := localExec.Run(rubric, ourRcFile)
+
 	if err != nil {
 		_, _ = red.Printf("%v\n", err)
 	}
@@ -172,13 +141,16 @@ func main() {
 	if timing {
 		end := time.Now().UnixMicro()
 		if verbose {
-			fmt.Printf("End time %v\n", end)
+			_, _ = green.Printf("End time %v\n", end)
 		}
 		fmt.Printf("Total Time in µsecs: %v\n", end-now)
 	}
-	exitVal := ecmd.ProcessState.ExitCode()
 
-	_, _ = green.Printf("\nProcess exited with %v\n", exitVal)
+	if rv != 0 {
+		_, _ = red.Printf("\nProcess exited with %v\n", rv)
+	} else {
+		_, _ = green.Printf("\nProcess exited with %v\n", rv)
+	}
 
-	os.Exit(ecmd.ProcessState.ExitCode())
+	os.Exit(rv)
 }

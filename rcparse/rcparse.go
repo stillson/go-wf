@@ -28,7 +28,12 @@ import (
 
 type RCFile interface {
 	Parse(r io.Reader) error
-	GetCommand(rubric string) string
+	GetCommand(rubric string) (string, bool)
+}
+
+type RCFileEnv interface {
+	RCFile
+	GetCommandEnv(rubric string) (string, map[string]string, bool)
 }
 
 // PlainRCFile
@@ -42,10 +47,15 @@ type YamlRCFile struct {
 	Commands map[string]string
 }
 
+type cmdEnv struct {
+	cmd  string
+	envs map[string]string
+}
+
 // Yaml and Template RCFile.
 type YTRCFile struct {
 	G        map[string]string
-	Commands map[string]string
+	Commands map[string]cmdEnv
 }
 
 // NewPlainRcFile Only works with full path.
@@ -182,7 +192,7 @@ func NewYTFile(filename string) (*YTRCFile, error) {
 	}()
 
 	rv := YTRCFile{
-		Commands: make(map[string]string),
+		Commands: make(map[string]cmdEnv),
 		G:        make(map[string]string),
 	}
 
@@ -192,18 +202,19 @@ func NewYTFile(filename string) (*YTRCFile, error) {
 }
 
 type YTFileEntry struct {
-	Rubric string `yaml:"rubric"`
-	Cmd    string `yaml:"cmd"`
+	Rubric   string            `yaml:"rubric"`
+	Commands string            `yaml:"c"`
+	Env      map[string]string `yaml:"env,omitempty"`
 }
 
 type YTFormat struct {
-	Items   []YamlFileEntry `yaml:"wf_file"`
-	Globals []string        `yaml:"globals,omitempty"`
+	Items   []YTFileEntry `yaml:"wf_file"`
+	Globals []string      `yaml:"globals,omitempty"`
 }
 
 func (rc *YTRCFile) Parse(r io.Reader) error {
 	entries := YTFormat{
-		Items:   make([]YamlFileEntry, 10, 11),
+		Items:   make([]YTFileEntry, 10, 11),
 		Globals: make([]string, 10, 11),
 	}
 
@@ -226,7 +237,10 @@ func (rc *YTRCFile) Parse(r io.Reader) error {
 	}
 
 	for _, entry := range entries.Items {
-		rc.Commands[entry.Rubric] = entry.Cmd
+		rc.Commands[entry.Rubric] = cmdEnv{cmd: entry.Commands, envs: map[string]string{}}
+		for k, v := range entry.Env {
+			rc.Commands[entry.Rubric].envs[k] = v
+		}
 	}
 
 	for _, global := range entries.Globals {
@@ -235,6 +249,7 @@ func (rc *YTRCFile) Parse(r io.Reader) error {
 		key := strings.Trim(name[0], " \n\t")
 		val := strings.Trim(name[1], " \n\t")
 
+		// make sure that there are only two items in split?
 		if len(name) == 2 {
 			rc.G[key] = val
 		}
@@ -244,17 +259,21 @@ func (rc *YTRCFile) Parse(r io.Reader) error {
 }
 
 func (rc *YTRCFile) GetCommand(rubric string) (string, bool) {
-	val, exists := rc.Commands[rubric]
+	cmd, _, exists := rc.GetCommandEnv(rubric)
+	return cmd, exists
+}
 
+func (rc *YTRCFile) GetCommandEnv(rubric string) (string, map[string]string, bool) {
+	val, exists := rc.Commands[rubric]
 	if !exists {
-		return "", exists
+		return "", nil, exists
 	}
 
 	t := template.New("cmd").Funcs(sprig.FuncMap())
-	tmlp, err := t.Parse(val)
+	tmlp, err := t.Parse(val.cmd)
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "error in template %v", err)
-		return "", false
+		return "", nil, false
 	}
 
 	var b strings.Builder
@@ -263,5 +282,5 @@ func (rc *YTRCFile) GetCommand(rubric string) (string, bool) {
 		_, _ = fmt.Fprintf(os.Stderr, "error executing template: %v", err)
 	}
 
-	return b.String(), exists
+	return b.String(), val.envs, exists
 }

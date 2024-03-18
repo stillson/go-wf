@@ -14,6 +14,7 @@ package rcparse
 import (
 	"bytes"
 	"io"
+	"maps"
 	"os"
 	"path/filepath"
 	"testing"
@@ -235,24 +236,28 @@ globals:
 wf_file:
   -
     rubric: a
-    cmd: b {{.G.bob}}
+    c: b {{.G.bob}}
+    env:
+      FOO: BAR
+      USER: me
   -
     rubric: c
-    cmd: >
+    c: >
       This is a special
       test. tada!
   - rubric: b
-    cmd: '{{.G.test}} {{.G.bob}}'
+    c: '{{.G.test}} {{.G.bob}}'
 `
 
 func TestYTRCFile_Parse(t *testing.T) {
 	type fields struct {
 		Globals  map[string]string
-		Commands map[string]string
+		Commands map[string]cmdEnv
 	}
 	type args struct {
 		r io.Reader
 	}
+
 	tests := []struct {
 		name    string
 		fields  fields
@@ -260,24 +265,28 @@ func TestYTRCFile_Parse(t *testing.T) {
 		wantErr bool
 		rubric  string
 		cmd     string
+		env     map[string]string
 	}{
+
 		{
 			name: "test1",
 			fields: fields{Globals: make(map[string]string),
-				Commands: make(map[string]string)},
+				Commands: make(map[string]cmdEnv)},
 			args:    args{bytes.NewBufferString(YamlFile2)},
 			wantErr: false,
 			rubric:  "a",
 			cmd:     "b 77",
+			env:     map[string]string{"FOO": "BAR", "USER": "me"},
 		},
 		{
 			name: "test2",
 			fields: fields{Globals: make(map[string]string),
-				Commands: make(map[string]string)},
+				Commands: make(map[string]cmdEnv)},
 			args:    args{bytes.NewBufferString(YamlFile2)},
 			wantErr: false,
 			rubric:  "b",
 			cmd:     "thingy 77",
+			env:     map[string]string{},
 		},
 	}
 	for _, tt := range tests {
@@ -292,9 +301,15 @@ func TestYTRCFile_Parse(t *testing.T) {
 			if tt.wantErr {
 				return
 			}
-			if cmd, exists := rc.GetCommand(tt.rubric); cmd != tt.cmd || !exists {
+
+			cmd, parsedEnv, exists := rc.GetCommandEnv(tt.rubric)
+			if cmd != tt.cmd || !exists {
 				t.Errorf("Parse()-get \"%v\":%v == wanted \"%v\"", cmd, exists, tt.cmd)
 			}
+			if !maps.Equal(parsedEnv, tt.env) {
+				t.Errorf("Expected environment is incorrect \nexpected:\t%v\ngot:\t\t%v", tt.env, parsedEnv)
+			}
+
 		})
 	}
 }
