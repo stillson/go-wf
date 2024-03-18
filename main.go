@@ -15,12 +15,13 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"os"
+	"time"
+
 	"github.com/fatih/color"
 	"github.com/stillson/go-wf/executor"
 	"github.com/stillson/go-wf/rcfile"
 	"github.com/stillson/go-wf/rcparse"
-	"os"
-	"time"
 )
 
 const (
@@ -108,7 +109,7 @@ func main() {
 		return
 	}
 
-	ourRcFile, err := rcparse.NewYTFile(f)
+	ourRcFile, err := rcparse.NewYRCFile(f)
 	if err != nil {
 		_, _ = red.Printf("Error parsing rcfile:%v\n", err)
 		os.Exit(2)

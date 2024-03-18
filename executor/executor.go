@@ -16,11 +16,12 @@ package executor
 
 import (
 	"fmt"
-	"github.com/fatih/color"
-	"github.com/stillson/go-wf/rcparse"
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/fatih/color"
+	"github.com/stillson/go-wf/rcparse"
 )
 
 // This is tricky to test. Depends on hidden variable and file system.
@@ -49,7 +50,7 @@ func NewLocalExec(name string) LocalExecutor {
 	return LocalExecutor{name}
 }
 
-func (l *LocalExecutor) Run(rubric string, rcfile rcparse.RCFileEnv) (int, error) {
+func (l *LocalExecutor) Run(rubric string, rcfile *rcparse.YRCfile) (int, error) {
 	red := color.New(color.FgHiRed)
 	green := color.New(color.FgHiGreen)
 

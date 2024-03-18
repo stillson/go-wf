@@ -30,22 +30,7 @@ import (
 type RCFile interface {
 	Parse(r io.Reader) error
 	GetCommand(rubric string) (string, bool)
-}
-
-type RCFileEnv interface {
-	RCFile
 	GetCommandEnv(rubric string) (string, map[string]string, bool)
-}
-
-// PlainRCFile
-// (<rubric>,<cmd>\n)* .
-type PlainRCFile struct {
-	Commands map[string]string
-}
-
-// Yaml RCFile.
-type YamlRCFile struct {
-	Commands map[string]string
 }
 
 type cmdEnv struct {
@@ -53,135 +38,14 @@ type cmdEnv struct {
 	envs map[string]string
 }
 
-// Yaml and Template RCFile.
-type YTRCFile struct {
+type YRCfile struct {
 	G        map[string]string
 	Commands map[string]cmdEnv
 }
 
-// NewPlainRcFile Only works with full path.
-func NewPlainRcFile(filename string) (*PlainRCFile, error) {
-	filename = filepath.Join("/", filepath.Clean(filename))
-
-	var fp, err = os.Open(filename)
-
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		_ = fp.Close()
-	}()
-
-	rv := PlainRCFile{
-		Commands: make(map[string]string),
-	}
-
-	err = rv.Parse(fp)
-
-	return &rv, err
-}
-
-// NewYamlRcFile Only works with full path.
-func _(filename string) (*YamlRCFile, error) {
-	filename = filepath.Join("/", filepath.Clean(filename))
-	var fp, err = os.Open(filename)
-
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		_ = fp.Close()
-	}()
-
-	rv := YamlRCFile{
-		Commands: make(map[string]string),
-	}
-
-	err = rv.Parse(fp)
-
-	return &rv, err
-}
-
-func (rc *PlainRCFile) Parse(r io.Reader) error {
-
-	s := bufio.NewScanner(r)
-
-	for s.Scan() {
-		line := s.Text()
-
-		// Put in # comments
-		if line[0] == '#' {
-			continue
-		}
-
-		rubric, cmd, found := strings.Cut(line, ",")
-		if !found {
-			return fmt.Errorf("could not parse line in rcfile %v", line)
-		}
-
-		rubric = strings.Trim(rubric, " \n\t")
-		cmd = strings.Trim(cmd, " \n\t")
-		rc.Commands[rubric] = cmd
-	}
-
-	return nil
-}
-
-func (rc *PlainRCFile) GetCommand(rubric string) (string, bool) {
-	val, exists := rc.Commands[rubric]
-	return val, exists
-}
-
-// YamlRCFile
-// An rcfile formatted in yaml.
-
-type YamlFileEntry struct {
-	Rubric string `yaml:"rubric"`
-	Cmd    string `yaml:"cmd"`
-}
-
-type YamlFileFormat struct {
-	Items []YamlFileEntry `yaml:"wf_file"`
-}
-
-func (rc *YamlRCFile) Parse(r io.Reader) error {
-	entries := YamlFileFormat{
-		Items: make([]YamlFileEntry, 10, 11),
-	}
-	br := bufio.NewReader(r)
-	fileBuf := make([]byte, 4095, 4096)
-
-	size, err := br.Read(fileBuf)
-
-	if err != nil {
-		return err
-	}
-	if size == 0 {
-		return fmt.Errorf("empty rc file")
-	}
-
-	fileBuf = fileBuf[0:size]
-
-	err = yaml.Unmarshal(fileBuf, &entries)
-	if err != nil {
-		return err
-	}
-
-	for _, entry := range entries.Items {
-		rc.Commands[entry.Rubric] = entry.Cmd
-	}
-
-	return nil
-}
-
-func (rc *YamlRCFile) GetCommand(rubric string) (string, bool) {
-	val, exists := rc.Commands[rubric]
-	return val, exists
-}
-
 // YamlTmplRCFile
 
-func NewYTFile(filename string) (*YTRCFile, error) {
+func NewYRCFile(filename string) (*YRCfile, error) {
 	filename = filepath.Join("/", filepath.Clean(filename))
 	var fp, err = os.Open(filename)
 
@@ -192,7 +56,7 @@ func NewYTFile(filename string) (*YTRCFile, error) {
 		_ = fp.Close()
 	}()
 
-	rv := YTRCFile{
+	rv := YRCfile{
 		Commands: make(map[string]cmdEnv),
 		G:        make(map[string]string),
 	}
@@ -202,20 +66,20 @@ func NewYTFile(filename string) (*YTRCFile, error) {
 	return &rv, err
 }
 
-type YTFileEntry struct {
+type YRCFileEntry struct {
 	Rubric   string            `yaml:"rubric"`
 	Commands string            `yaml:"c"`
 	Env      map[string]string `yaml:"env,omitempty"`
 }
 
-type YTFormat struct {
-	Items   []YTFileEntry `yaml:"wf_file"`
-	Globals []string      `yaml:"globals,omitempty"`
+type YRCFormat struct {
+	Items   []YRCFileEntry `yaml:"wf_file"`
+	Globals []string       `yaml:"globals,omitempty"`
 }
 
-func (rc *YTRCFile) Parse(r io.Reader) error {
-	entries := YTFormat{
-		Items:   make([]YTFileEntry, 10, 11),
+func (rc *YRCfile) Parse(r io.Reader) error {
+	entries := YRCFormat{
+		Items:   make([]YRCFileEntry, 10, 11),
 		Globals: make([]string, 10, 11),
 	}
 
@@ -259,12 +123,12 @@ func (rc *YTRCFile) Parse(r io.Reader) error {
 	return nil
 }
 
-func (rc *YTRCFile) GetCommand(rubric string) (string, bool) {
+func (rc *YRCfile) GetCommand(rubric string) (string, bool) {
 	cmd, _, exists := rc.GetCommandEnv(rubric)
 	return cmd, exists
 }
 
-func (rc *YTRCFile) GetCommandEnv(rubric string) (string, map[string]string, bool) {
+func (rc *YRCfile) GetCommandEnv(rubric string) (string, map[string]string, bool) {
 	val, exists := rc.Commands[rubric]
 	if !exists {
 		return "", nil, exists
