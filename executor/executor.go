@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"strings"
 
 	"github.com/fatih/color"
 	"github.com/stillson/go-wf/rcparse"
@@ -27,14 +26,18 @@ import (
 // This is tricky to test. Depends on hidden variable and file system.
 func preProcCmd(cmd string) (string, []string, error) {
 
-	splitCmd := strings.Split(cmd, " ")
+	cmdStart, cmdRest, err := rcparse.ParseCmd(cmd)
 
-	outCmd, err := exec.LookPath(splitCmd[0])
 	if err != nil {
-		return splitCmd[0], splitCmd[1:], err
+		return "", nil, err
 	}
 
-	return outCmd, splitCmd[1:], nil
+	outCmd, err := exec.LookPath(cmdStart)
+	if err != nil {
+		return cmdStart, cmdRest, err
+	}
+
+	return outCmd, cmdRest, nil
 }
 
 type Executor interface {
@@ -66,7 +69,7 @@ func (l *LocalExecutor) Run(rubric string, rcfile *rcparse.YRCfile) (int, error)
 		os.Exit(4)
 	}
 
-	_, _ = green.Printf("cmd: %v\t\targs: %v\n", splitCmd, splitArgs)
+	_, _ = green.Printf("cmd: %v\t\targs: %#v\n", splitCmd, splitArgs)
 	if env != nil {
 		_, _ = green.Printf("Env : %+v\n\n", env)
 	} else {
