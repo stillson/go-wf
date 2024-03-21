@@ -39,7 +39,7 @@ static-check:
 clean:
 	go clean
 
-GO_VERSION :=1.18
+GO_VERSION :=1.21.6
 
 install-go:
 	wget "https://golang.org/dl/go$(GO_VERSION).linux-amd64.tar.gz"
