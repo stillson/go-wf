@@ -34,7 +34,7 @@ install-lint:
 	| sh -s -- -b $$(go env GOPATH)/bin latest
 
 static-check:
-	golangci-lint run
+	$$(go env GOPATH)/bin/golangci-lint run
 
 clean:
 	go clean
