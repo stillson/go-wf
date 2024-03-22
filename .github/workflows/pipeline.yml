@@ -81,7 +81,7 @@ jobs:
     - name: Copy Files
       run: |
            mkdir  artifacts
-           cp go-wf artifacts/.
+           cp wf artifacts/.
 
     - name: Archive
       uses: actions/upload-artifact@v4
