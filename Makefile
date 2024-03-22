@@ -1,7 +1,7 @@
 
 
 build:
-	go build
+	go build -o wf
 
 test:
 	go test ./...
