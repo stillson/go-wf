@@ -43,8 +43,6 @@ type YRCfile struct {
 	Commands map[string]cmdEnv
 }
 
-// YamlTmplRCFile
-
 func NewYRCFile(filename string) (*YRCfile, error) {
 	filename = filepath.Join("/", filepath.Clean(filename))
 	var fp, err = os.Open(filename)

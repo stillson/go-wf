@@ -62,8 +62,6 @@ func TestGetRCFile(t *testing.T) {
 		_ = os.Chdir(oldPwd)
 	}()
 
-	//dir = os.
-
 	err = os.Chdir(dir)
 	if err != nil {
 		t.Fatalf("Unable to change directory to %s: %v\n", dir, err)
@@ -77,7 +75,18 @@ func TestGetRCFile(t *testing.T) {
 	// make subdirectory TEST
 	subDir := filepath.Join(dir, "TEST")
 	if err = os.Mkdir(subDir, 0750); err != nil {
-		t.Fatalf("Unable to creat testing subDir")
+		t.Fatalf("Unable to create testing subDir")
+	}
+	if err = os.Mkdir(filepath.Join(subDir, ".workflow.yaml"), 0750); err != nil {
+		t.Fatalf("Unable to create testing fake workflow file")
+	}
+	subDir2 := filepath.Join(subDir, "TEST2")
+	if err = os.Mkdir(subDir2, 0750); err != nil {
+		t.Fatalf("Unable to create testing fake workflow file")
+	}
+	file2 := filepath.Join(subDir2, ".workflow.yaml")
+	if err = os.WriteFile(file2, []byte("content"), 0); err != nil {
+		t.Fatalf("Unable to create second test .workflow.yaml")
 	}
 
 	tests := []struct {
@@ -101,6 +110,20 @@ func TestGetRCFile(t *testing.T) {
 			want:    filepath.Join(dir, ".workflow.yaml"),
 			wantErr: false,
 		},
+		{
+			name:    "test3",
+			dir:     subDir2,
+			fName:   ".workflow.yaml",
+			want:    filepath.Join(dir, ".workflow.yaml"),
+			wantErr: false,
+		},
+		{
+			name:    "test4",
+			dir:     subDir2,
+			fName:   "NOTFOUND.yaml",
+			want:    filepath.Join(dir, "NOTFOUND.yaml"),
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -111,6 +134,10 @@ func TestGetRCFile(t *testing.T) {
 			got, err := GetRCFile(tt.fName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetRCFile() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr {
+				// we wanted and got an error, return now
 				return
 			}
 			same, err := sameFile(got, tt.want)

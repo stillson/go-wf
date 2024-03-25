@@ -66,6 +66,13 @@ func TestParseCmd(t *testing.T) {
 			want1:   []string{"b", "c", "d", "e", "f 'g' h"},
 			wantErr: false,
 		},
+		{
+			name:    "test7",
+			args:    `   'a'     b      c       d     e    "f 'g' h"`,
+			want:    "a",
+			want1:   []string{"b", "c", "d", "e", "f 'g' h"},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
