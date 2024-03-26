@@ -22,7 +22,7 @@ For example:
 > git commit
 ----
 
-By using the same rubrics across every build environment, less small details must be remembered by the
+By using the same rules across every build environment, less small details must be remembered by the
 developer providing a simpler and faster code/build/test loop.
 
 == History
@@ -34,14 +34,14 @@ was called by a shell script called `wf`.
 == MVP Design
 
 * commands in local file called .workflow.yaml
-** simple format <rubric>,<command>
+** simple format <rule>,<command>
 ** if file doesn't exist then raise error, fatal
 ** if there is a parsing error, raise error, fatal
 * `wf` will read and parse file
 * `wf` will look at it's first arg
 ** extra args are ignored for now
-* find command matching rubric
-** if first arg doesn't match a rubric, fatal error
+* find command matching rule
+** if first arg doesn't match a rule, fatal error
 * the command is executed
 * `wf` returns the return value of the executed program
 

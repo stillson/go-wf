@@ -25,17 +25,17 @@ globals:
   - test = thingy
 wf_file:
   -
-    rubric: a
+    rule: a
     c: b {{.G.bob}}
     env:
       FOO: BAR
       USER: me
   -
-    rubric: c
+    rule: c
     c: >
       This is a special
       test. tada!
-  - rubric: b
+  - rule: b
     c: '{{.G.test}} {{.G.bob}}'
 `
 
@@ -53,7 +53,7 @@ func TestYTRCFile_Parse(t *testing.T) {
 		fields  fields
 		args    args
 		wantErr bool
-		rubric  string
+		rule    string
 		cmd     string
 		env     map[string]string
 	}{
@@ -64,7 +64,7 @@ func TestYTRCFile_Parse(t *testing.T) {
 				Commands: make(map[string]cmdEnv)},
 			args:    args{bytes.NewBufferString(YamlFile)},
 			wantErr: false,
-			rubric:  "a",
+			rule:    "a",
 			cmd:     "b 77",
 			env:     map[string]string{"FOO": "BAR", "USER": "me"},
 		},
@@ -74,7 +74,7 @@ func TestYTRCFile_Parse(t *testing.T) {
 				Commands: make(map[string]cmdEnv)},
 			args:    args{bytes.NewBufferString(YamlFile)},
 			wantErr: false,
-			rubric:  "b",
+			rule:    "b",
 			cmd:     "thingy 77",
 			env:     map[string]string{},
 		},
@@ -92,7 +92,7 @@ func TestYTRCFile_Parse(t *testing.T) {
 				return
 			}
 
-			cmd, parsedEnv, exists := rc.GetCommandEnv(tt.rubric)
+			cmd, parsedEnv, exists := rc.GetCommandEnv(tt.rule)
 			if cmd != tt.cmd || !exists {
 				t.Errorf("Parse()-get \"%v\":%v == wanted \"%v\"", cmd, exists, tt.cmd)
 			}

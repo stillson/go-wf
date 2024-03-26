@@ -119,9 +119,9 @@ func main() {
 		fmt.Printf("\tRC: %v\n", ourRcFile)
 	}
 
-	rubric := flag.Arg(0)
+	rule := flag.Arg(0)
 	if verbose {
-		fmt.Printf("rubric is: %s\n", rubric)
+		fmt.Printf("rule is: %s\n", rule)
 	}
 
 	var now int64
@@ -133,7 +133,7 @@ func main() {
 	}
 
 	localExec := executor.NewLocalExec("main")
-	rv, err := localExec.Run(rubric, ourRcFile)
+	rv, err := localExec.Run(rule, ourRcFile)
 
 	if err != nil {
 		_, _ = red.Printf("%v\n", err)

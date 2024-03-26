@@ -29,8 +29,8 @@ import (
 
 type RCFile interface {
 	Parse(r io.Reader) error
-	GetCommand(rubric string) (string, bool)
-	GetCommandEnv(rubric string) (string, map[string]string, bool)
+	GetCommand(rule string) (string, bool)
+	GetCommandEnv(rule string) (string, map[string]string, bool)
 }
 
 type cmdEnv struct {
@@ -65,7 +65,7 @@ func NewYRCFile(filename string) (*YRCfile, error) {
 }
 
 type YRCFileEntry struct {
-	Rubric   string            `yaml:"rubric"`
+	Rule     string            `yaml:"rule"`
 	Commands string            `yaml:"c"`
 	Env      map[string]string `yaml:"env,omitempty"`
 }
@@ -100,9 +100,9 @@ func (rc *YRCfile) Parse(r io.Reader) error {
 	}
 
 	for _, entry := range entries.Items {
-		rc.Commands[entry.Rubric] = cmdEnv{cmd: entry.Commands, envs: map[string]string{}}
+		rc.Commands[entry.Rule] = cmdEnv{cmd: entry.Commands, envs: map[string]string{}}
 		for k, v := range entry.Env {
-			rc.Commands[entry.Rubric].envs[k] = v
+			rc.Commands[entry.Rule].envs[k] = v
 		}
 	}
 
@@ -121,13 +121,13 @@ func (rc *YRCfile) Parse(r io.Reader) error {
 	return nil
 }
 
-func (rc *YRCfile) GetCommand(rubric string) (string, bool) {
-	cmd, _, exists := rc.GetCommandEnv(rubric)
+func (rc *YRCfile) GetCommand(rule string) (string, bool) {
+	cmd, _, exists := rc.GetCommandEnv(rule)
 	return cmd, exists
 }
 
-func (rc *YRCfile) GetCommandEnv(rubric string) (string, map[string]string, bool) {
-	val, exists := rc.Commands[rubric]
+func (rc *YRCfile) GetCommandEnv(rule string) (string, map[string]string, bool) {
+	val, exists := rc.Commands[rule]
 	if !exists {
 		return "", nil, exists
 	}

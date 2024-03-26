@@ -41,8 +41,8 @@ func preProcCmd(cmd string) (string, []string, error) {
 }
 
 type Executor interface {
-	Run(rubric string, rcfile *rcparse.RCFile) (int, error)
-	// RunWithContext(ctx context.Context, rubric string, rcfile *rcparse.RCFile) error
+	Run(rule string, rcfile *rcparse.RCFile) (int, error)
+	// RunWithContext(ctx context.Context, rule string, rcfile *rcparse.RCFile) error
 }
 
 type LocalExecutor struct {
@@ -53,13 +53,13 @@ func NewLocalExec(name string) LocalExecutor {
 	return LocalExecutor{name}
 }
 
-func (l *LocalExecutor) Run(rubric string, rcfile *rcparse.YRCfile) (int, error) {
+func (l *LocalExecutor) Run(rule string, rcfile *rcparse.YRCfile) (int, error) {
 	red := color.New(color.FgHiRed)
 	green := color.New(color.FgHiGreen)
 
-	cmd, env, exists := rcfile.GetCommandEnv(rubric)
+	cmd, env, exists := rcfile.GetCommandEnv(rule)
 	if !exists {
-		_, _ = red.Printf("rubric does not exist\n")
+		_, _ = red.Printf("rule does not exist\n")
 		os.Exit(3)
 	}
 
