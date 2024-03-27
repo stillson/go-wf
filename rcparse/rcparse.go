@@ -71,14 +71,14 @@ type YRCFileEntry struct {
 }
 
 type YRCFormat struct {
-	Items   []YRCFileEntry `yaml:"wf_file"`
-	Globals []string       `yaml:"globals,omitempty"`
+	Items   []YRCFileEntry    `yaml:"wf_file"`
+	Globals map[string]string `yaml:"globals,omitempty"`
 }
 
 func (rc *YRCfile) Parse(r io.Reader) error {
 	entries := YRCFormat{
 		Items:   make([]YRCFileEntry, 10, 11),
-		Globals: make([]string, 10, 11),
+		Globals: make(map[string]string, 10),
 	}
 
 	br := bufio.NewReader(r)
@@ -106,16 +106,8 @@ func (rc *YRCfile) Parse(r io.Reader) error {
 		}
 	}
 
-	for _, global := range entries.Globals {
-
-		name := strings.SplitN(global, "=", 2)
-		key := strings.Trim(name[0], " \n\t")
-		val := strings.Trim(name[1], " \n\t")
-
-		// make sure that there are only two items in split?
-		if len(name) == 2 {
-			rc.G[key] = val
-		}
+	for k, v := range entries.Globals {
+		rc.G[k] = v
 	}
 
 	return nil

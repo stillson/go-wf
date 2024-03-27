@@ -21,8 +21,8 @@ import (
 const YamlFile = `
 # This is a test comment
 globals:
-  - bob=77
-  - test = thingy
+  bob: 77
+  test: thingy
 wf_file:
   -
     rule: a
