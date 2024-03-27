@@ -55,13 +55,31 @@ func NewLocalExec(name string) LocalExecutor {
 
 func (l *LocalExecutor) Run(rule string, rcfile *rcparse.YRCfile) (int, error) {
 	red := color.New(color.FgHiRed)
-	green := color.New(color.FgHiGreen)
 
 	cmd, env, exists := rcfile.GetCommandEnv(rule)
 	if !exists {
 		_, _ = red.Printf("rule does not exist\n")
 		os.Exit(3)
 	}
+
+	for _, c := range cmd {
+		rv, err := l.subRun(c, env)
+
+		if err != nil {
+			return rv, err
+		}
+
+		if rv != 0 {
+			return rv, nil
+		}
+	}
+
+	return 0, nil
+}
+
+func (l *LocalExecutor) subRun(cmd string, env map[string]string) (int, error) {
+	red := color.New(color.FgHiRed)
+	green := color.New(color.FgHiGreen)
 
 	splitCmd, splitArgs, err := preProcCmd(cmd)
 	if err != nil {

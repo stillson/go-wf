@@ -21,22 +21,27 @@ import (
 const YamlFile = `
 # This is a test comment
 globals:
-  bob: 77
-  test: thingy
+  bob: BOBOB
+  test: TESTEST
 wf_file:
   -
-    rule: a
-    c: b {{.G.bob}}
+    rule: alpha
+    c:
+     - bbb {{.G.bob}}
+     - ddd
     env:
       FOO: BAR
       USER: me
   -
-    rule: c
-    c: >
-      This is a special
-      test. tada!
-  - rule: b
-    c: '{{.G.test}} {{.G.bob}}'
+    rule: beta
+    c: 
+      - >
+        This is a special
+        test. tada!
+      - foo
+  - rule: delta
+    c: 
+      - '{{.G.test}} {{.G.bob}}'
 `
 
 func TestYTRCFile_Parse(t *testing.T) {
@@ -64,8 +69,8 @@ func TestYTRCFile_Parse(t *testing.T) {
 				Commands: make(map[string]cmdEnv)},
 			args:    args{bytes.NewBufferString(YamlFile)},
 			wantErr: false,
-			rule:    "a",
-			cmd:     "b 77",
+			rule:    "alpha",
+			cmd:     "bbb BOBOB",
 			env:     map[string]string{"FOO": "BAR", "USER": "me"},
 		},
 		{
@@ -74,8 +79,8 @@ func TestYTRCFile_Parse(t *testing.T) {
 				Commands: make(map[string]cmdEnv)},
 			args:    args{bytes.NewBufferString(YamlFile)},
 			wantErr: false,
-			rule:    "b",
-			cmd:     "thingy 77",
+			rule:    "delta",
+			cmd:     "TESTEST BOBOB",
 			env:     map[string]string{},
 		},
 	}
@@ -86,18 +91,18 @@ func TestYTRCFile_Parse(t *testing.T) {
 				Commands: tt.fields.Commands,
 			}
 			if err := rc.Parse(tt.args.r); (err != nil) != tt.wantErr {
-				t.Errorf("Parse() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Parse() error = %v, wantErr %v\n", err, tt.wantErr)
 			}
 			if tt.wantErr {
 				return
 			}
 
 			cmd, parsedEnv, exists := rc.GetCommandEnv(tt.rule)
-			if cmd != tt.cmd || !exists {
-				t.Errorf("Parse()-get \"%v\":%v == wanted \"%v\"", cmd, exists, tt.cmd)
+			if !exists || cmd[0] != tt.cmd {
+				t.Errorf("Parse()-get got: %v exists:%v -- wanted %v\n", cmd, exists, tt.cmd)
 			}
 			if !maps.Equal(parsedEnv, tt.env) {
-				t.Errorf("Expected environment is incorrect \nexpected:\t%v\ngot:\t\t%v", tt.env, parsedEnv)
+				t.Errorf("Expected environment is incorrect \nexpected:\t%v\ngot:\t\t%v\n", tt.env, parsedEnv)
 			}
 
 		})

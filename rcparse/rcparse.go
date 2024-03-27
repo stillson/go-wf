@@ -29,12 +29,12 @@ import (
 
 type RCFile interface {
 	Parse(r io.Reader) error
-	GetCommand(rule string) (string, bool)
-	GetCommandEnv(rule string) (string, map[string]string, bool)
+	GetCommand(rule string) ([]string, bool)
+	GetCommandEnv(rule string) ([]string, map[string]string, bool)
 }
 
 type cmdEnv struct {
-	cmd  string
+	cmd  []string
 	envs map[string]string
 }
 
@@ -66,7 +66,7 @@ func NewYRCFile(filename string) (*YRCfile, error) {
 
 type YRCFileEntry struct {
 	Rule     string            `yaml:"rule"`
-	Commands string            `yaml:"c"`
+	Commands []string          `yaml:"c"`
 	Env      map[string]string `yaml:"env,omitempty"`
 }
 
@@ -100,10 +100,15 @@ func (rc *YRCfile) Parse(r io.Reader) error {
 	}
 
 	for _, entry := range entries.Items {
-		rc.Commands[entry.Rule] = cmdEnv{cmd: entry.Commands, envs: map[string]string{}}
+		newRule := cmdEnv{cmd: []string{}, envs: map[string]string{}}
+
+		newRule.cmd = append(newRule.cmd, entry.Commands...)
+
 		for k, v := range entry.Env {
-			rc.Commands[entry.Rule].envs[k] = v
+			newRule.envs[k] = v
 		}
+
+		rc.Commands[entry.Rule] = newRule
 	}
 
 	for k, v := range entries.Globals {
@@ -113,29 +118,35 @@ func (rc *YRCfile) Parse(r io.Reader) error {
 	return nil
 }
 
-func (rc *YRCfile) GetCommand(rule string) (string, bool) {
+func (rc *YRCfile) GetCommand(rule string) ([]string, bool) {
 	cmd, _, exists := rc.GetCommandEnv(rule)
 	return cmd, exists
 }
 
-func (rc *YRCfile) GetCommandEnv(rule string) (string, map[string]string, bool) {
+func (rc *YRCfile) GetCommandEnv(rule string) ([]string, map[string]string, bool) {
 	val, exists := rc.Commands[rule]
 	if !exists {
-		return "", nil, exists
+		return []string{}, nil, exists
 	}
 
-	t := template.New("cmd").Funcs(sprig.FuncMap())
-	tmlp, err := t.Parse(val.cmd)
-	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "error in template %v", err)
-		return "", nil, false
-	}
+	rv := []string{}
 
-	var b strings.Builder
-	err = tmlp.Execute(&b, rc)
-	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "error executing template: %v", err)
-	}
+	for _, c := range val.cmd {
+		t := template.New("cmd").Funcs(sprig.FuncMap())
+		tmlp, err := t.Parse(c)
+		if err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "error in template %v", err)
+			return []string{}, nil, false
+		}
 
-	return b.String(), val.envs, exists
+		var b strings.Builder
+		err = tmlp.Execute(&b, rc)
+		if err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "error executing template: %v", err)
+		}
+
+		rv = append(rv, b.String())
+		b.Reset()
+	}
+	return rv, val.envs, exists
 }
