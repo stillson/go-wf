@@ -21,6 +21,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/Masterminds/sprig"
@@ -31,6 +32,7 @@ type RCFile interface {
 	Parse(r io.Reader) error
 	GetCommand(rule string) ([]string, bool)
 	GetCommandEnv(rule string) ([]string, map[string]string, bool)
+	ListRules() ([]string, error)
 }
 
 type cmdEnv struct {
@@ -149,4 +151,15 @@ func (rc *YRCfile) GetCommandEnv(rule string) ([]string, map[string]string, bool
 		b.Reset()
 	}
 	return rv, val.envs, exists
+}
+
+func (rc *YRCfile) ListRules() ([]string, error) {
+	rv := []string{}
+
+	for k := range rc.Commands {
+		rv = append(rv, k)
+	}
+
+	sort.Strings(rv)
+	return rv, nil
 }

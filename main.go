@@ -35,6 +35,8 @@ func main() {
 	timeQ := flag.Bool("t", false, "Time the command")
 	dumpQ := flag.Bool("d", false, "Dump contents of workflow file")
 	wfFile := flag.String("f", ".workflow.yaml", "Name of workflow file")
+	ruleQ := flag.Bool("r", false, "Print available rules")
+
 	flag.Parse()
 
 	if *versionQ {
@@ -117,6 +119,20 @@ func main() {
 
 	if verbose {
 		fmt.Printf("\tRC: %v\n", ourRcFile)
+	}
+
+	if *ruleQ {
+		rules, err := ourRcFile.ListRules()
+		if err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "%v", err)
+			os.Exit(7)
+		}
+
+		for _, rule := range rules {
+			fmt.Printf("%s\n", rule)
+		}
+
+		return
 	}
 
 	rule := flag.Arg(0)
