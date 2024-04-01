@@ -10,10 +10,11 @@ test-j:
 	go test -json ./...
 
 cover:
-	go test -coverprofile coverage.out ./...
+	go test -covermode count -coverprofile=coverage.data  ./...
 
 report: cover
-	go tool cover -html=coverage.out -o cover.html
+	go tool cover -html=coverage.data -o cover.html
+	go tool cover -func=coverage.data -o cover.txt
 
 check-format:
 	test -z $$(go fmt ./...)
