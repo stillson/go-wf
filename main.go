@@ -41,15 +41,7 @@ func main() {
 
 	vprint(*verboseQ, "Verbose is on\n")
 	vprint(*timeQ && *verboseQ, "Timing enabled\n")
-
-	dump := false
-	if *dumpQ {
-		dump = true
-		if *verboseQ {
-			fmt.Printf("Dumping workflow file\n")
-		}
-	}
-
+	vprint(*dumpQ && *verboseQ, "Dumping workflow file\n")
 	vprint(*verboseQ, "File to search for: %s\n", *wfFile)
 
 	// set up colors
@@ -62,32 +54,10 @@ func main() {
 		_, _ = red.Printf("Error getting rcfile:%v\n", err)
 		os.Exit(1)
 	}
-
 	vprint(*verboseQ, "Actual file found: %s\n", f)
 
-	if dump {
-		var fp, err = os.Open(f) //nolint:gosec
-		if err != nil {
-			_, _ = red.Printf("Error reading rcfile:%v\n", err)
-			os.Exit(2)
-
-		}
-
-		defer func() {
-			_ = fp.Close()
-		}()
-
-		if *verboseQ {
-			vprint(*verboseQ, "---\n")
-		}
-		scanner := bufio.NewScanner(fp)
-		for scanner.Scan() {
-			fmt.Println(scanner.Text())
-		}
-		if err := scanner.Err(); err != nil {
-			_, _ = red.Printf("error dumping file %v\n", err)
-		}
-
+	if *dumpQ {
+		dumpRulesFile(f, *verboseQ)
 		return
 	}
 
@@ -96,22 +66,12 @@ func main() {
 		_, _ = red.Printf("Error parsing rcfile:%v\n", err)
 		os.Exit(2)
 	}
-
 	if *verboseQ {
 		vprint(*verboseQ, "\tRC: %v\n", ourRcFile)
 	}
 
 	if *ruleQ {
-		rules, err := ourRcFile.ListRules()
-		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "%v", err)
-			os.Exit(7)
-		}
-
-		for _, rule := range rules {
-			fmt.Printf("%s\n", rule)
-		}
-
+		printRules(ourRcFile)
 		return
 	}
 
@@ -128,7 +88,6 @@ func main() {
 
 	localExec := executor.NewLocalExec("main")
 	rv, err := localExec.Run(rule, ourRcFile)
-
 	if err != nil {
 		_, _ = red.Printf("%v\n", err)
 	}
@@ -148,6 +107,42 @@ func main() {
 	}
 
 	os.Exit(rv)
+}
+
+func printRules(ourRcFile *rcparse.YRCfile) {
+	rules, err := ourRcFile.ListRules()
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "%v", err)
+		os.Exit(7)
+	}
+
+	for _, rule := range rules {
+		fmt.Printf("%s\n", rule)
+	}
+}
+
+func dumpRulesFile(f string, verb bool) {
+	red := color.New(color.FgHiRed)
+
+	var fp, err = os.Open(f) //nolint:gosec
+	if err != nil {
+		_, _ = red.Printf("Error reading rcfile:%v\n", err)
+		os.Exit(2)
+	}
+	defer func() {
+		_ = fp.Close()
+	}()
+
+	vprint(verb, "---\n")
+
+	scanner := bufio.NewScanner(fp)
+	for scanner.Scan() {
+		fmt.Println(scanner.Text())
+	}
+	err = scanner.Err()
+	if err != nil {
+		_, _ = red.Printf("error dumping file %v\n", err)
+	}
 }
 
 func ParseArgs() (*bool, *bool, *bool, *string, *bool) {
