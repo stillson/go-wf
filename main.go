@@ -28,47 +28,29 @@ const (
 	VERSION = "0.0.2"
 )
 
-func main() {
-	// flags
-	versionQ := flag.Bool("v", false, "Version of this program")
-	verboseQ := flag.Bool("V", false, "Verbose output")
-	timeQ := flag.Bool("t", false, "Time the command")
-	dumpQ := flag.Bool("d", false, "Dump contents of workflow file")
-	wfFile := flag.String("f", ".workflow.yaml", "Name of workflow file")
-	ruleQ := flag.Bool("r", false, "Print available rules")
-
-	flag.Parse()
-
-	if *versionQ {
-		fmt.Printf("wf version %v\n", VERSION)
+func vprint(verbose bool, format string, inputs ...any) {
+	if !verbose {
 		return
 	}
 
-	verbose := false
-	if *verboseQ {
-		verbose = true
-		fmt.Println("Verbose is on")
-	}
+	fmt.Printf(format, inputs...)
+}
 
-	timing := false
-	if *timeQ {
-		timing = true
-		if verbose {
-			fmt.Printf("Timing enabled\n")
-		}
-	}
+func main() {
+	verboseQ, timeQ, dumpQ, wfFile, ruleQ := ParseArgs()
+
+	vprint(*verboseQ, "Verbose is on\n")
+	vprint(*timeQ && *verboseQ, "Timing enabled\n")
 
 	dump := false
 	if *dumpQ {
 		dump = true
-		if verbose {
+		if *verboseQ {
 			fmt.Printf("Dumping workflow file\n")
 		}
 	}
 
-	if verbose {
-		fmt.Printf("File to search for: %s\n", *wfFile)
-	}
+	vprint(*verboseQ, "File to search for: %s\n", *wfFile)
 
 	// set up colors
 	red := color.New(color.FgHiRed)
@@ -81,9 +63,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if verbose {
-		fmt.Printf("Actual file found: %s\n", f)
-	}
+	vprint(*verboseQ, "Actual file found: %s\n", f)
 
 	if dump {
 		var fp, err = os.Open(f) //nolint:gosec
@@ -97,8 +77,8 @@ func main() {
 			_ = fp.Close()
 		}()
 
-		if verbose {
-			fmt.Printf("---\n")
+		if *verboseQ {
+			vprint(*verboseQ, "---\n")
 		}
 		scanner := bufio.NewScanner(fp)
 		for scanner.Scan() {
@@ -117,8 +97,8 @@ func main() {
 		os.Exit(2)
 	}
 
-	if verbose {
-		fmt.Printf("\tRC: %v\n", ourRcFile)
+	if *verboseQ {
+		vprint(*verboseQ, "\tRC: %v\n", ourRcFile)
 	}
 
 	if *ruleQ {
@@ -136,14 +116,12 @@ func main() {
 	}
 
 	rule := flag.Arg(0)
-	if verbose {
-		fmt.Printf("rule is: %s\n", rule)
-	}
+	vprint(*verboseQ, "rule is: %s\n", rule)
 
 	var now int64
-	if timing {
+	if *timeQ {
 		now = time.Now().UnixMicro()
-		if verbose {
+		if *verboseQ {
 			_, _ = green.Printf("Start time: %v\n", now)
 		}
 	}
@@ -155,9 +133,9 @@ func main() {
 		_, _ = red.Printf("%v\n", err)
 	}
 
-	if timing {
+	if *timeQ {
 		end := time.Now().UnixMicro()
-		if verbose {
+		if *verboseQ {
 			_, _ = green.Printf("End time %v\n", end)
 		}
 		fmt.Printf("Total Time in µsecs: %v\n", end-now)
@@ -170,4 +148,22 @@ func main() {
 	}
 
 	os.Exit(rv)
+}
+
+func ParseArgs() (*bool, *bool, *bool, *string, *bool) {
+	// flags
+	versionQ := flag.Bool("v", false, "Version of this program")
+	verboseQ := flag.Bool("V", false, "Verbose output")
+	timeQ := flag.Bool("t", false, "Time the command")
+	dumpQ := flag.Bool("d", false, "Dump contents of workflow file")
+	wfFile := flag.String("f", ".workflow.yaml", "Name of workflow file")
+	ruleQ := flag.Bool("r", false, "Print available rules")
+
+	flag.Parse()
+
+	if *versionQ {
+		fmt.Printf("wf version %v\n", VERSION)
+		os.Exit(0)
+	}
+	return verboseQ, timeQ, dumpQ, wfFile, ruleQ
 }

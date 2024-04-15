@@ -27,7 +27,6 @@ import (
 func preProcCmd(cmd string) (string, []string, error) {
 
 	cmdStart, cmdRest, err := rcparse.ParseCmd(cmd)
-
 	if err != nil {
 		return "", nil, err
 	}
@@ -68,7 +67,6 @@ func (l *LocalExecutor) Run(rule string, rcfile *rcparse.YRCfile) (int, error) {
 		if err != nil {
 			return rv, err
 		}
-
 		if rv != 0 {
 			return rv, nil
 		}
@@ -94,15 +92,11 @@ func (l *LocalExecutor) subRun(cmd string, env map[string]string) (int, error) {
 		fmt.Printf("\n")
 	}
 
-	// Because this executes arbitrary commands from and external file
-	// there is no way to make this "safe", short of whitelisting
-	// hence the nolint:gosec
 	ecmd := exec.Command(splitCmd, splitArgs...) //nolint:gosec
 	ecmd.Stdout, ecmd.Stderr = os.Stdout, os.Stderr
 
 	for k, v := range env {
-		line := fmt.Sprintf("%s=%s", k, v)
-		ecmd.Env = append(ecmd.Env, line)
+		ecmd.Env = append(ecmd.Env, fmt.Sprintf("%s=%s", k, v))
 	}
 
 	err = ecmd.Run()
