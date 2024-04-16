@@ -40,6 +40,66 @@ func vprint(verbose bool, printGreen bool, format string, inputs ...any) {
 	fmt.Printf(format, inputs...)
 }
 
+func getColorPrints() (*color.Color, *color.Color) {
+	red := color.New(color.FgHiRed)
+	green := color.New(color.FgHiGreen)
+	return red, green
+}
+
+func printRules(ourRcFile *rcparse.YRCfile) {
+	rules, err := ourRcFile.ListRules()
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "%v", err)
+		os.Exit(7)
+	}
+
+	for _, rule := range rules {
+		fmt.Printf("%s\n", rule)
+	}
+}
+
+func dumpRulesFile(f string, verb bool) {
+	red := color.New(color.FgHiRed)
+
+	var fp, err = os.Open(f) //nolint:gosec
+	if err != nil {
+		_, _ = red.Printf("Error reading rcfile:%v\n", err)
+		os.Exit(2)
+	}
+	defer func() {
+		_ = fp.Close()
+	}()
+
+	vprint(verb, false, "---\n")
+
+	scanner := bufio.NewScanner(fp)
+	for scanner.Scan() {
+		fmt.Println(scanner.Text())
+	}
+	err = scanner.Err()
+	if err != nil {
+		_, _ = red.Printf("error dumping file %v\n", err)
+	}
+}
+
+func ParseArgs() (*bool, *bool, *bool, *string, *bool) {
+	// flags
+	versionQ := flag.Bool("v", false, "Version of this program")
+	verboseQ := flag.Bool("V", false, "Verbose output")
+	timeQ := flag.Bool("t", false, "Time the command")
+	dumpQ := flag.Bool("d", false, "Dump contents of workflow file")
+	wfFile := flag.String("f", ".workflow.yaml", "Name of workflow file")
+	ruleQ := flag.Bool("r", false, "Print available rules")
+
+	flag.Parse()
+
+	if *versionQ {
+		fmt.Printf("wf version %v\n", VERSION)
+		os.Exit(0)
+	}
+	return verboseQ, timeQ, dumpQ, wfFile, ruleQ
+}
+
 func main() {
 	verboseQ, timeQ, dumpQ, wfFile, ruleQ := ParseArgs()
 
@@ -99,69 +159,7 @@ func main() {
 
 	if rv != 0 {
 		_, _ = red.Printf("\nProcess exited with %v\n", rv)
-	} else {
-		_, _ = green.Printf("\nProcess exited with %v\n", rv)
 	}
 
 	os.Exit(rv)
-}
-
-func getColorPrints() (*color.Color, *color.Color) {
-	red := color.New(color.FgHiRed)
-	green := color.New(color.FgHiGreen)
-	return red, green
-}
-
-func printRules(ourRcFile *rcparse.YRCfile) {
-	rules, err := ourRcFile.ListRules()
-	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "%v", err)
-		os.Exit(7)
-	}
-
-	for _, rule := range rules {
-		fmt.Printf("%s\n", rule)
-	}
-}
-
-func dumpRulesFile(f string, verb bool) {
-	red := color.New(color.FgHiRed)
-
-	var fp, err = os.Open(f) //nolint:gosec
-	if err != nil {
-		_, _ = red.Printf("Error reading rcfile:%v\n", err)
-		os.Exit(2)
-	}
-	defer func() {
-		_ = fp.Close()
-	}()
-
-	vprint(verb, false, "---\n")
-
-	scanner := bufio.NewScanner(fp)
-	for scanner.Scan() {
-		fmt.Println(scanner.Text())
-	}
-	err = scanner.Err()
-	if err != nil {
-		_, _ = red.Printf("error dumping file %v\n", err)
-	}
-}
-
-func ParseArgs() (*bool, *bool, *bool, *string, *bool) {
-	// flags
-	versionQ := flag.Bool("v", false, "Version of this program")
-	verboseQ := flag.Bool("V", false, "Verbose output")
-	timeQ := flag.Bool("t", false, "Time the command")
-	dumpQ := flag.Bool("d", false, "Dump contents of workflow file")
-	wfFile := flag.String("f", ".workflow.yaml", "Name of workflow file")
-	ruleQ := flag.Bool("r", false, "Print available rules")
-
-	flag.Parse()
-
-	if *versionQ {
-		fmt.Printf("wf version %v\n", VERSION)
-		os.Exit(0)
-	}
-	return verboseQ, timeQ, dumpQ, wfFile, ruleQ
 }
