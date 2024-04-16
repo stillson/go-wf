@@ -28,25 +28,28 @@ const (
 	VERSION = "0.0.2"
 )
 
-func vprint(verbose bool, format string, inputs ...any) {
+func vprint(verbose bool, printGreen bool, format string, inputs ...any) {
 	if !verbose {
 		return
 	}
-
+	if printGreen {
+		_, green := getColorPrints()
+		_, _ = green.Printf(format, inputs...)
+		return
+	}
 	fmt.Printf(format, inputs...)
 }
 
 func main() {
 	verboseQ, timeQ, dumpQ, wfFile, ruleQ := ParseArgs()
 
-	vprint(*verboseQ, "Verbose is on\n")
-	vprint(*timeQ && *verboseQ, "Timing enabled\n")
-	vprint(*dumpQ && *verboseQ, "Dumping workflow file\n")
-	vprint(*verboseQ, "File to search for: %s\n", *wfFile)
+	vprint(*verboseQ, false, "Verbose is on\n")
+	vprint(*timeQ && *verboseQ, false, "Timing enabled\n")
+	vprint(*dumpQ && *verboseQ, false, "Dumping workflow file\n")
+	vprint(*verboseQ, false, "File to search for: %s\n", *wfFile)
 
 	// set up colors
-	red := color.New(color.FgHiRed)
-	green := color.New(color.FgHiGreen)
+	red, green := getColorPrints()
 
 	// get filename of rcfile
 	f, err := rcfile.GetRCFile(*wfFile)
@@ -54,7 +57,7 @@ func main() {
 		_, _ = red.Printf("Error getting rcfile:%v\n", err)
 		os.Exit(1)
 	}
-	vprint(*verboseQ, "Actual file found: %s\n", f)
+	vprint(*verboseQ, false, "Actual file found: %s\n", f)
 
 	if *dumpQ {
 		dumpRulesFile(f, *verboseQ)
@@ -66,9 +69,7 @@ func main() {
 		_, _ = red.Printf("Error parsing rcfile:%v\n", err)
 		os.Exit(2)
 	}
-	if *verboseQ {
-		vprint(*verboseQ, "\tRC: %v\n", ourRcFile)
-	}
+	vprint(*verboseQ, false, "\tRC: %v\n", ourRcFile)
 
 	if *ruleQ {
 		printRules(ourRcFile)
@@ -76,14 +77,12 @@ func main() {
 	}
 
 	rule := flag.Arg(0)
-	vprint(*verboseQ, "rule is: %s\n", rule)
+	vprint(*verboseQ, false, "rule is: %s\n", rule)
 
 	var now int64
 	if *timeQ {
 		now = time.Now().UnixMicro()
-		if *verboseQ {
-			_, _ = green.Printf("Start time: %v\n", now)
-		}
+		vprint(*verboseQ, true, "Start time: %v\n", now)
 	}
 
 	localExec := executor.NewLocalExec("main")
@@ -94,9 +93,7 @@ func main() {
 
 	if *timeQ {
 		end := time.Now().UnixMicro()
-		if *verboseQ {
-			_, _ = green.Printf("End time %v\n", end)
-		}
+		vprint(*verboseQ, true, "End time: %v\n", end)
 		fmt.Printf("Total Time in µsecs: %v\n", end-now)
 	}
 
@@ -107,6 +104,12 @@ func main() {
 	}
 
 	os.Exit(rv)
+}
+
+func getColorPrints() (*color.Color, *color.Color) {
+	red := color.New(color.FgHiRed)
+	green := color.New(color.FgHiGreen)
+	return red, green
 }
 
 func printRules(ourRcFile *rcparse.YRCfile) {
@@ -133,7 +136,7 @@ func dumpRulesFile(f string, verb bool) {
 		_ = fp.Close()
 	}()
 
-	vprint(verb, "---\n")
+	vprint(verb, false, "---\n")
 
 	scanner := bufio.NewScanner(fp)
 	for scanner.Scan() {
