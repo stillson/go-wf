@@ -94,7 +94,7 @@ func main() {
 	if *timeQ {
 		end := time.Now().UnixMicro()
 		vprint(*verboseQ, true, "End time: %v\n", end)
-		fmt.Printf("Total Time in µsecs: %v\n", end-now)
+		_, _ = green.Printf("Total Time in µsecs: %v\n", end-now)
 	}
 
 	if rv != 0 {
