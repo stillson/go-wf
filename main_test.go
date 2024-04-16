@@ -146,7 +146,11 @@ func Test_getColorPrints(t *testing.T) {
 		want  *color.Color
 		want1 *color.Color
 	}{
-		// TODO: Add test cases.
+		{
+			name:  "test",
+			want:  color.New(color.FgHiRed),
+			want1: color.New(color.FgHiGreen),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
