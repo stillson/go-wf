@@ -12,7 +12,9 @@
 package main
 
 import (
+	"bytes"
 	"flag"
+	"io"
 	"os"
 	"reflect"
 	"testing"
@@ -169,35 +171,53 @@ func Test_printRules(t *testing.T) {
 	type args struct {
 		ourRcFile *rcparse.YRCfile
 	}
-	tests := []struct {
-		name string
-		args args
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			printRules(tt.args.ourRcFile)
-		})
-	}
-}
 
-func Test_vprint(t *testing.T) {
-	type args struct {
-		verbose    bool
-		printGreen bool
-		format     string
-		inputs     []any
+	g := map[string]string{}
+	commands := map[string]rcparse.CmdEnv{}
+
+	commands["b"] = rcparse.CmdEnv{}
+	commands["a"] = rcparse.CmdEnv{}
+
+	x := rcparse.YRCfile{
+		G:        g,
+		Commands: commands,
 	}
+
 	tests := []struct {
 		name string
 		args args
+		want string
 	}{
-		// TODO: Add test cases.
+		{
+			name: "test",
+			args: args{&x},
+			want: "a\nb\n",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			vprint(tt.args.verbose, tt.args.printGreen, tt.args.format, tt.args.inputs...)
+
+			r, w, _ := os.Pipe()
+
+			savedOut := os.Stdout
+			os.Stdout = w
+			printRules(tt.args.ourRcFile)
+
+			outC := make(chan string)
+			go func() {
+				buf := bytes.Buffer{}
+				_, _ = io.Copy(&buf, r)
+				outC <- buf.String()
+			}()
+
+			_ = w.Close()
+			os.Stdout = savedOut
+			out := <-outC
+
+			if out != tt.want {
+				t.Errorf("printRules() got1 = %v, verbose %v", out, tt.want)
+			}
+
 		})
 	}
 }

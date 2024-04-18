@@ -47,7 +47,7 @@ wf_file:
 func TestYTRCFile_Parse(t *testing.T) {
 	type fields struct {
 		Globals  map[string]string
-		Commands map[string]cmdEnv
+		Commands map[string]CmdEnv
 	}
 	type args struct {
 		r io.Reader
@@ -66,7 +66,7 @@ func TestYTRCFile_Parse(t *testing.T) {
 		{
 			name: "test1",
 			fields: fields{Globals: make(map[string]string),
-				Commands: make(map[string]cmdEnv)},
+				Commands: make(map[string]CmdEnv)},
 			args:    args{bytes.NewBufferString(YamlFile)},
 			wantErr: false,
 			rule:    "alpha",
@@ -76,7 +76,7 @@ func TestYTRCFile_Parse(t *testing.T) {
 		{
 			name: "test2",
 			fields: fields{Globals: make(map[string]string),
-				Commands: make(map[string]cmdEnv)},
+				Commands: make(map[string]CmdEnv)},
 			args:    args{bytes.NewBufferString(YamlFile)},
 			wantErr: false,
 			rule:    "delta",

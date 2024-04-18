@@ -35,14 +35,14 @@ type RCFile interface {
 	ListRules() ([]string, error)
 }
 
-type cmdEnv struct {
-	cmd  []string
-	envs map[string]string
+type CmdEnv struct {
+	Cmd  []string
+	Envs map[string]string
 }
 
 type YRCfile struct {
 	G        map[string]string
-	Commands map[string]cmdEnv
+	Commands map[string]CmdEnv
 }
 
 func NewYRCFile(filename string) (*YRCfile, error) {
@@ -57,7 +57,7 @@ func NewYRCFile(filename string) (*YRCfile, error) {
 	}()
 
 	rv := YRCfile{
-		Commands: make(map[string]cmdEnv),
+		Commands: make(map[string]CmdEnv),
 		G:        make(map[string]string),
 	}
 
@@ -102,12 +102,12 @@ func (rc *YRCfile) Parse(r io.Reader) error {
 	}
 
 	for _, entry := range entries.Items {
-		newRule := cmdEnv{cmd: []string{}, envs: map[string]string{}}
+		newRule := CmdEnv{Cmd: []string{}, Envs: map[string]string{}}
 
-		newRule.cmd = append(newRule.cmd, entry.Commands...)
+		newRule.Cmd = append(newRule.Cmd, entry.Commands...)
 
 		for k, v := range entry.Env {
-			newRule.envs[k] = v
+			newRule.Envs[k] = v
 		}
 
 		rc.Commands[entry.Rule] = newRule
@@ -133,8 +133,8 @@ func (rc *YRCfile) GetCommandEnv(rule string) ([]string, map[string]string, bool
 
 	rv := []string{}
 
-	for _, c := range val.cmd {
-		t := template.New("cmd").Funcs(sprig.FuncMap())
+	for _, c := range val.Cmd {
+		t := template.New("Cmd").Funcs(sprig.FuncMap())
 		tmlp, err := t.Parse(c)
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "error in template %v", err)
@@ -150,7 +150,7 @@ func (rc *YRCfile) GetCommandEnv(rule string) ([]string, map[string]string, bool
 		rv = append(rv, b.String())
 		b.Reset()
 	}
-	return rv, val.envs, exists
+	return rv, val.Envs, exists
 }
 
 func (rc *YRCfile) ListRules() ([]string, error) {
