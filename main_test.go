@@ -16,6 +16,7 @@ import (
 	"flag"
 	"io"
 	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -125,19 +126,72 @@ func TestParseArgs(t *testing.T) {
 }
 
 func Test_dumpRulesFile(t *testing.T) {
+
+	dir, err := os.MkdirTemp("", "dumpRulesFile_test*")
+	if err != nil {
+		t.Fatalf("Unable to create tmp directory\n")
+	}
+	defer func() {
+		_ = os.RemoveAll(dir)
+	}()
+
+	oldPwd, _ := os.Getwd()
+	defer func() {
+		_ = os.Chdir(oldPwd)
+	}()
+
+	err = os.Chdir(dir)
+	if err != nil {
+		t.Fatalf("Unable to change directory to %s: %v\n", dir, err)
+	}
+
+	// make a .workflow.yaml
+	file := filepath.Join(dir, ".workflow.yaml")
+	if err = os.WriteFile(file, []byte("content"), 0600); err != nil {
+		t.Fatalf("Unable to create test .workflow.yaml")
+	}
+
 	type args struct {
-		f    string
-		verb bool
+		f       string
+		verbose bool
 	}
 	tests := []struct {
 		name string
 		args args
+		want string
 	}{
-		// TODO: Add test cases.
+		{
+			name: "test",
+			args: args{
+				f:       ".workflow.yaml",
+				verbose: false,
+			},
+			want: "content\n",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			dumpRulesFile(tt.args.f, tt.args.verb)
+			r, w, _ := os.Pipe()
+			savedOut := os.Stdout
+			os.Stdout = w
+
+			dumpRulesFile(tt.args.f, tt.args.verbose)
+
+			outC := make(chan string)
+			go func() {
+				buf := bytes.Buffer{}
+				_, _ = io.Copy(&buf, r)
+				outC <- buf.String()
+			}()
+
+			_ = w.Close()
+			os.Stdout = savedOut
+			out := <-outC
+
+			if out != tt.want {
+				t.Errorf("dumpRulesFile() got1 = %v, verbose %v", out, tt.want)
+			}
+
 		})
 	}
 }

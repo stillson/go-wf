@@ -51,7 +51,7 @@ func TestGetRCFile(t *testing.T) {
 
 	dir, err := os.MkdirTemp("", "rcfile_test*")
 	if err != nil {
-		t.Fatalf("Unable to creat tmp directory\n")
+		t.Fatalf("Unable to create tmp directory\n")
 	}
 	defer func() {
 		_ = os.RemoveAll(dir)
