@@ -18,6 +18,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/stillson/go-wf/termui"
+
 	"github.com/fatih/color"
 	"github.com/stillson/go-wf/executor"
 	"github.com/stillson/go-wf/rcfile"
@@ -33,17 +35,11 @@ func vprint(verbose bool, printGreen bool, format string, inputs ...any) {
 		return
 	}
 	if printGreen {
-		_, green := getColorPrints()
+		_, green := termui.GetColorPrints()
 		_, _ = green.Printf(format, inputs...)
 		return
 	}
 	fmt.Printf(format, inputs...)
-}
-
-func getColorPrints() (*color.Color, *color.Color) {
-	red := color.New(color.FgHiRed)
-	green := color.New(color.FgHiGreen)
-	return red, green
 }
 
 func printRules(ourRcFile *rcparse.YRCfile) {
@@ -109,7 +105,7 @@ func main() {
 	vprint(*verboseQ, false, "File to search for: %s\n", *wfFile)
 
 	// set up colors
-	red, green := getColorPrints()
+	red, green := termui.GetColorPrints()
 
 	// get filename of rcfile
 	f, err := rcfile.GetRCFile(*wfFile)

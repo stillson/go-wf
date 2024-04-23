@@ -19,8 +19,8 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/fatih/color"
 	"github.com/stillson/go-wf/rcparse"
+	"github.com/stillson/go-wf/termui"
 )
 
 // This is tricky to test. Depends on hidden variable and file system.
@@ -53,7 +53,7 @@ func NewLocalExec(name string) LocalExecutor {
 }
 
 func (l *LocalExecutor) Run(rule string, rcfile *rcparse.YRCfile) (int, error) {
-	red := color.New(color.FgHiRed)
+	red, _ := termui.GetColorPrints()
 
 	cmd, env, exists := rcfile.GetCommandEnv(rule)
 	if !exists {
@@ -63,12 +63,8 @@ func (l *LocalExecutor) Run(rule string, rcfile *rcparse.YRCfile) (int, error) {
 
 	for _, c := range cmd {
 		rv, err := l.subRun(c, env)
-
-		if err != nil {
+		if err != nil || rv != 0 {
 			return rv, err
-		}
-		if rv != 0 {
-			return rv, nil
 		}
 	}
 
@@ -76,35 +72,38 @@ func (l *LocalExecutor) Run(rule string, rcfile *rcparse.YRCfile) (int, error) {
 }
 
 func (l *LocalExecutor) subRun(cmd string, env map[string]string) (int, error) {
-	red := color.New(color.FgHiRed)
-	green := color.New(color.FgHiGreen)
-
+	red, _ := termui.GetColorPrints()
 	splitCmd, splitArgs, err := preProcCmd(cmd)
 	if err != nil {
 		_, _ = red.Printf("cmd not found in path? %v\terr:%v\n", splitCmd, err)
 		os.Exit(4)
 	}
 
-	_, _ = green.Printf("cmd: %v\t\targs: %#v\n", splitCmd, splitArgs)
-	if env != nil {
-		_, _ = green.Printf("Env : %+v\n\n", env)
-	} else {
-		fmt.Printf("\n")
-	}
+	l.displayCommand(splitCmd, splitArgs, env)
 
-	ecmd := exec.Command(splitCmd, splitArgs...) //nolint:gosec
-	ecmd.Stdout, ecmd.Stderr = os.Stdout, os.Stderr
-
-	for k, v := range env {
-		ecmd.Env = append(ecmd.Env, fmt.Sprintf("%s=%s", k, v))
-	}
-
+	ecmd := l.getCommand(splitCmd, splitArgs, env)
 	err = ecmd.Run()
+
 	if err != nil {
 		return -1, fmt.Errorf("error running command %s: %v", splitCmd, err)
 	}
+	return ecmd.ProcessState.ExitCode(), nil
+}
 
-	exitVal := ecmd.ProcessState.ExitCode()
+func (l *LocalExecutor) displayCommand(splitCmd string, splitArgs []string, env map[string]string) {
+	_, green := termui.GetColorPrints()
+	_, _ = green.Printf("cmd: %v\t\targs: %#v\n", splitCmd, splitArgs)
+	if env != nil {
+		_, _ = green.Printf("Env : %+v\n", env)
+	}
+	fmt.Printf("\n")
+}
 
-	return exitVal, nil
+func (l *LocalExecutor) getCommand(splitCmd string, splitArgs []string, env map[string]string) *exec.Cmd {
+	ecmd := exec.Command(splitCmd, splitArgs...) //nolint:gosec
+	ecmd.Stdout, ecmd.Stderr = os.Stdout, os.Stderr
+	for k, v := range env {
+		ecmd.Env = append(ecmd.Env, fmt.Sprintf("%s=%s", k, v))
+	}
+	return ecmd
 }

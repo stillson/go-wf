@@ -20,7 +20,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/fatih/color"
 	"github.com/stillson/go-wf/rcparse"
 )
 
@@ -192,31 +191,6 @@ func Test_dumpRulesFile(t *testing.T) {
 				t.Errorf("dumpRulesFile() got1 = %v, verbose %v", out, tt.want)
 			}
 
-		})
-	}
-}
-
-func Test_getColorPrints(t *testing.T) {
-	tests := []struct {
-		name  string
-		want  *color.Color
-		want1 *color.Color
-	}{
-		{
-			name:  "test",
-			want:  color.New(color.FgHiRed),
-			want1: color.New(color.FgHiGreen),
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, got1 := getColorPrints()
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getColorPrints() got = %v, verbose %v", got, tt.want)
-			}
-			if !reflect.DeepEqual(got1, tt.want1) {
-				t.Errorf("getColorPrints() got1 = %v, verbose %v", got1, tt.want1)
-			}
 		})
 	}
 }

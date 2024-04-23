@@ -39,6 +39,7 @@ static-check:
 
 clean:
 	go clean
+	rm -f wf
 
 GO_VERSION :=1.21.6
 
