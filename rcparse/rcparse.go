@@ -56,14 +56,16 @@ func NewYRCFile(filename string) (*YRCfile, error) {
 		_ = fp.Close()
 	}()
 
+	return CreateYRCFile(fp)
+}
+
+func CreateYRCFile(rd io.Reader) (*YRCfile, error) {
 	rv := YRCfile{
 		Commands: make(map[string]CmdEnv),
 		G:        make(map[string]string),
 	}
 
-	err = rv.Parse(fp)
-
-	return &rv, err
+	return &rv, rv.Parse(rd)
 }
 
 type YRCFileEntry struct {
