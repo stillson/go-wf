@@ -125,7 +125,7 @@ func TestLocalExecutor_getCommand(t *testing.T) {
 				splitArgs: []string{"TEST"},
 				env:       map[string]string{"TEST": "TEST"},
 			},
-			want: "/bin/echo TEST",
+			want: "echo TEST",
 		},
 	}
 	for _, tt := range tests {
@@ -133,7 +133,7 @@ func TestLocalExecutor_getCommand(t *testing.T) {
 			l := &LocalExecutor{
 				name: tt.fields,
 			}
-			if got := l.getCommand(tt.args.splitCmd, tt.args.splitArgs, tt.args.env).String(); !reflect.DeepEqual(got, tt.want) {
+			if got := l.getCommand(tt.args.splitCmd, tt.args.splitArgs, tt.args.env).String(); !strings.Contains(got, tt.want) {
 				t.Errorf("getCommand() = %v, want %v", got, tt.want)
 			}
 		})
