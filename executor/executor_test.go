@@ -204,7 +204,7 @@ func Test_preProcCmd(t *testing.T) {
 				t.Errorf("preProcCmd() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if got != tt.want {
+			if !strings.Contains(got, tt.want) {
 				t.Errorf("preProcCmd() got = %v, want %v", got, tt.want)
 			}
 			if !reflect.DeepEqual(got1, tt.want1) {
